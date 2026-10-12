@@ -13,7 +13,7 @@ AREAS = {
     "begumpet": (17.4440, 78.4640),
     "gachibowli": (17.4401, 78.3489),
 }
-RADIUS_M = 1500  # metres from the centre, roughly 7 km2
+RADIUS_M = 1500  # metres from the centre, roughly 9 km2
 
 OUT_DIR = Path(__file__).resolve().parents[2] / "data" / "processed"
 
