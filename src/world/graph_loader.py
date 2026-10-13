@@ -4,6 +4,7 @@ Run from the repo root:  python src/world/graph_loader.py
 """
 import ast
 import statistics
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -196,8 +197,6 @@ def print_speed_report(G, edges_before):
               f"({imputed[road_class] / count:6.1%})  filled with {speeds} km/h")
     print(f"max speed_kmh: {max(d['speed_kmh'] for _, _, d in G.edges(data=True))}")
 
-
-import time
 
 if __name__ == "__main__":
     OUT_DIR.mkdir(parents=True, exist_ok=True)
