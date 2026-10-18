@@ -1,0 +1,4 @@
+horizon_min,persistence_MAE,hist_avg_MAE
+15,0.0513,0.0624
+30,0.0616,0.0624
+60,0.079,0.0624
