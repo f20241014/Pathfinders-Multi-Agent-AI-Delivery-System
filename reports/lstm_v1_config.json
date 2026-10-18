@@ -1,0 +1,18 @@
+{
+  "seed": 42,
+  "win": 12,
+  "horizons": [
+    3,
+    6,
+    12
+  ],
+  "hidden": 64,
+  "layers": 2,
+  "dropout": 0.1,
+  "batch": 512,
+  "steps_per_epoch": 400,
+  "epochs": 25,
+  "patience": 4,
+  "lr": 0.001,
+  "best_val_mae": 0.048797912895679474
+}
