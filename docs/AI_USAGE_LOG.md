@@ -2,3 +2,4 @@
 - 2026-10-18 | Nandan (R6) | Claude | data_prep.py (zeros to NaN, free-flow, ratio, 70/10/20 split) and EDA plots | verified by running: split sizes and dates checked, plots inspected
 - 2026-10-18 | Nandan (R6) | Claude | baselines.py (persistence, historical average) | verified by running; MAE table in reports/baseline_mae.csv
 - 2026-10-18 | Nandan (R6) | Claude | src/world/edge_table.py and traffic_model.py (traffic ground truth on R2's real graph) | verified by running: 6056 edges, 23 days, min multiplier 1.0, class profiles, determinism
+- 2026-10-18 | Nandan (R6) | Claude | train.py (shared LSTM, masked MAE, early stopping, 3-way test comparison) | verified by running; LSTM beats both baselines at 15/30 min, hist avg wins at 60 min; table in reports/model_mae.csv
