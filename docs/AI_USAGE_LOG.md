@@ -1,3 +1,4 @@
 - 2026-10-18 | Nandan (R6) | Claude | METR-LA loader and environment setup | verified by running it: shape (34272, 207), 8.1% zeros, dates 2012-03-01 to 2012-06-27
 - 2026-10-18 | Nandan (R6) | Claude | data_prep.py (zeros to NaN, free-flow, ratio, 70/10/20 split) and EDA plots | verified by running: split sizes and dates checked, plots inspected
 - 2026-10-18 | Nandan (R6) | Claude | baselines.py (persistence, historical average) | verified by running; MAE table in reports/baseline_mae.csv
+- 2026-10-18 | Nandan (R6) | Claude | src/world/edge_table.py and traffic_model.py (traffic ground truth on R2's real graph) | verified by running: 6056 edges, 23 days, min multiplier 1.0, class profiles, determinism
