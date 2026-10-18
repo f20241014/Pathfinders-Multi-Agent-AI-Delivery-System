@@ -1,0 +1,1 @@
+- 2026-10-18 | Nandan (R6) | Claude | METR-LA loader and environment setup | verified by running it: shape (34272, 207), 8.1% zeros, dates 2012-03-01 to 2012-06-27
