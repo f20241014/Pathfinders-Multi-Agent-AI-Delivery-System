@@ -1,0 +1,8 @@
+- 2026-10-18 | Nandan (R6) | Claude | METR-LA loader and environment setup | verified by running it: shape (34272, 207), 8.1% zeros, dates 2012-03-01 to 2012-06-27
+- 2026-10-18 | Nandan (R6) | Claude | data_prep.py (zeros to NaN, free-flow, ratio, 70/10/20 split) and EDA plots | verified by running: split sizes and dates checked, plots inspected
+- 2026-10-18 | Nandan (R6) | Claude | baselines.py (persistence, historical average) | verified by running; MAE table in reports/baseline_mae.csv
+- 2026-10-18 | Nandan (R6) | Claude | src/world/edge_table.py and traffic_model.py (traffic ground truth on R2's real graph) | verified by running: 6056 edges, 23 days, min multiplier 1.0, class profiles, determinism
+- 2026-10-18 | Nandan (R6) | Claude | train.py (shared LSTM, masked MAE, early stopping, 3-way test comparison) | verified by running; LSTM beats both baselines at 15/30 min, hist avg wins at 60 min; table in reports/model_mae.csv
+- 2026-10-18 | Nandan (R6) | Claude | src/prediction/predictor.py (cached batch predictor, LSTM 15/30 min, hist avg 60 min, LA-clock fix) | verified by running: refresh 0.358 s, min multiplier 1.009, mean abs multiplier error 0.137/0.174/0.251 at 15/30/60 min
+- 2026-10-18 | Nandan (R6) | Claude | tests/test_prediction.py | verified by running pytest: 6 passed
+- 2026-10-18 | Nandan (R6) | Claude | src/prediction/figures.py (F4, error by hour) | verified by running; F4 matches reports/model_mae.csv, hourly table peaks 15-18h

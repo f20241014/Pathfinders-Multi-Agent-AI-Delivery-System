@@ -6,4 +6,7 @@ __pycache__/
 
 # raw data stays out of the repo
 data/raw/
-cache/
+cache/.venv/
+data/raw/
+.venv/
+data/raw/
