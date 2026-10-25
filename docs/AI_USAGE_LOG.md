@@ -7,3 +7,4 @@
 - 2026-10-18 | Nandan (R6) | Claude | tests/test_prediction.py | verified by running pytest: 6 passed
 - 2026-10-18 | Nandan (R6) | Claude | src/prediction/figures.py (F4, error by hour) | verified by running; F4 matches reports/model_mae.csv, hourly table peaks 15-18h
 - 2026-10-25 | Nandan (R6) | Claude | fixed edge_table zone size (degrees to metres) after R2 review | verified: 46 zones, mean abs multiplier error 0.131/0.173/0.249 at 15/30/60 min, pytest passes
+- 2026-10-25 | Nandan (R6) | Claude | rewrote corrupted .gitignore | verified by cat and git status
