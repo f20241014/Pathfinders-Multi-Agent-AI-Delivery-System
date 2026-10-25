@@ -9,3 +9,4 @@
 - 2026-10-25 | Nandan (R6) | Claude | fixed edge_table zone size (degrees to metres) after R2 review | verified: 46 zones, mean abs multiplier error 0.131/0.173/0.249 at 15/30/60 min, pytest passes
 - 2026-10-25 | Nandan (R6) | Claude | rewrote corrupted .gitignore | verified by cat and git status
 - 2026-10-25 | Nandan (R6) | Claude | README setup section | verified by reading it against the actual run order
+- 2026-10-25 | Nandan (R6) | Claude | predictor robustness (cache, ValueError, start clamp, weights_only), demo moved to predictor_demo.py, no-future-leak test | verified by running demo (errors 0.131/0.173/0.249) and pytest: 9 passed
