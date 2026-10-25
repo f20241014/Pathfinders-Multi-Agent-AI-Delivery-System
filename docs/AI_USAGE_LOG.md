@@ -10,3 +10,4 @@
 - 2026-10-25 | Nandan (R6) | Claude | rewrote corrupted .gitignore | verified by cat and git status
 - 2026-10-25 | Nandan (R6) | Claude | README setup section | verified by reading it against the actual run order
 - 2026-10-25 | Nandan (R6) | Claude | predictor robustness (cache, ValueError, start clamp, weights_only), demo moved to predictor_demo.py, no-future-leak test | verified by running demo (errors 0.131/0.173/0.249) and pytest: 9 passed
+- 2026-10-25 | Nandan (R6) | Claude | baselines persistence made consistent with train.py | verified: persistence columns match exactly in baseline_mae.csv and model_mae.csv (0.0518/0.0624/0.08)
