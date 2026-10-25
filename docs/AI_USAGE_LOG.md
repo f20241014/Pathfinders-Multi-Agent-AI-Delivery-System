@@ -1,0 +1,14 @@
+- 2026-10-18 | Nandan (R6) | Claude | METR-LA loader and environment setup | verified by running it: shape (34272, 207), 8.1% zeros, dates 2012-03-01 to 2012-06-27
+- 2026-10-18 | Nandan (R6) | Claude | data_prep.py (zeros to NaN, free-flow, ratio, 70/10/20 split) and EDA plots | verified by running: split sizes and dates checked, plots inspected
+- 2026-10-18 | Nandan (R6) | Claude | baselines.py (persistence, historical average) | verified by running; MAE table in reports/baseline_mae.csv
+- 2026-10-18 | Nandan (R6) | Claude | src/world/edge_table.py and traffic_model.py (traffic ground truth on R2's real graph) | verified by running: 6056 edges, 23 days, min multiplier 1.0, class profiles, determinism
+- 2026-10-18 | Nandan (R6) | Claude | train.py (shared LSTM, masked MAE, early stopping, 3-way test comparison) | verified by running; LSTM beats both baselines at 15/30 min, hist avg wins at 60 min; table in reports/model_mae.csv
+- 2026-10-18 | Nandan (R6) | Claude | src/prediction/predictor.py (cached batch predictor, LSTM 15/30 min, hist avg 60 min, LA-clock fix) | verified by running: refresh 0.358 s, min multiplier 1.009, mean abs multiplier error 0.137/0.174/0.251 at 15/30/60 min
+- 2026-10-18 | Nandan (R6) | Claude | tests/test_prediction.py | verified by running pytest: 6 passed
+- 2026-10-18 | Nandan (R6) | Claude | src/prediction/figures.py (F4, error by hour) | verified by running; F4 matches reports/model_mae.csv, hourly table peaks 15-18h
+- 2026-10-25 | Nandan (R6) | Claude | fixed edge_table zone size (degrees to metres) after R2 review | verified: 46 zones, mean abs multiplier error 0.131/0.173/0.249 at 15/30/60 min, pytest passes
+- 2026-10-25 | Nandan (R6) | Claude | rewrote corrupted .gitignore | verified by cat and git status
+- 2026-10-25 | Nandan (R6) | Claude | README setup section | verified by reading it against the actual run order
+- 2026-10-25 | Nandan (R6) | Claude | predictor robustness (cache, ValueError, start clamp, weights_only), demo moved to predictor_demo.py, no-future-leak test | verified by running demo (errors 0.131/0.173/0.249) and pytest: 9 passed
+- 2026-10-25 | Nandan (R6) | Claude | baselines persistence made consistent with train.py | verified: persistence columns match exactly in baseline_mae.csv and model_mae.csv (0.0518/0.0624/0.08)
+- 2026-10-25 | Nandan (R6) | Claude | pinned requirements.txt via importlib.metadata | verified: file lists 7 pinned packages, pytest still passes
