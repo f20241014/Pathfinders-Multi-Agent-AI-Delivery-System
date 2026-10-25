@@ -40,3 +40,9 @@ def test_predictor_outputs():
     for h in (15, 30, 60):
         v = p.predict(0, 9 * 3600, h)
         assert 1.0 <= v <= 6.0
+
+
+def test_zone_count_is_sensible():
+    from src.world.edge_table import load_edge_table
+    edges, classes, zones = load_edge_table()
+    assert 20 <= len(set(zones)) <= 150

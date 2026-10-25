@@ -2,14 +2,14 @@
 
 Reads R2's Secunderabad graph. Parallel edges are merged (the highest road
 class wins). Road classes are cleaned (lists and *_link variants). Zones are
-~500 m grid cells of the start node, used for spatially correlated noise.
+500 m grid cells (projected CRS, metres) of the start node, used for spatially correlated noise.
 """
 import ast
 import networkx as nx
 
 RANK = ["motorway", "trunk", "primary", "secondary", "tertiary",
         "unclassified", "residential", "living_street"]
-CELL_DEG = 0.005   # ~500 m
+CELL_M = 500.0   # zone cell size in metres (graph is in a projected CRS)
 
 
 def rank(c):
@@ -30,6 +30,8 @@ def clean_class(raw):
 
 def load_edge_table(path="data/processed/secunderabad.graphml"):
     G = nx.read_graphml(path)
+    if max(abs(float(d["x"])) for _, d in G.nodes(data=True)) < 1000:
+        raise ValueError("node x/y look like degrees; expected projected metres")
     best = {}
     for u, v, d in G.edges(data=True):
         c = clean_class(d.get("highway"))
@@ -41,6 +43,6 @@ def load_edge_table(path="data/processed/secunderabad.graphml"):
     zones = []
     for u, _ in edges:
         x, y = float(G.nodes[u]["x"]), float(G.nodes[u]["y"])
-        key = (int(x // CELL_DEG), int(y // CELL_DEG))
+        key = (int(x // CELL_M), int(y // CELL_M))
         zones.append(cells.setdefault(key, len(cells)))
     return edges, classes, zones
