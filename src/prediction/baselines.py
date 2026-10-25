@@ -26,10 +26,10 @@ def mae(pred, target):
     return float(np.nanmean(err))
 
 
-def evaluate(test, table, h):
+def evaluate(test, table, h, current=None):
     target = test.shift(-h)                      # true ratio h steps later
     # persistence: future = now
-    persist = mae(test, target)
+    persist = mae(test if current is None else current, target)
     # historical average: look up the table at the TARGET time
     t_idx = test.index + pd.Timedelta(minutes=5 * h)
     keys = pd.MultiIndex.from_arrays([t_idx.dayofweek, slot(t_idx)])
@@ -42,9 +42,10 @@ def evaluate(test, table, h):
 if __name__ == "__main__":
     ratio, train, val, test = prepare_ratio()
     table = hist_table(train)
+    current = test.ffill()   # same as train.py: forward-filled current value
     rows = []
     for h in HORIZONS:
-        p, a = evaluate(test, table, h)
+        p, a = evaluate(test, table, h, current)
         rows.append({"horizon_min": 5 * h, "persistence_MAE": round(p, 4),
                      "hist_avg_MAE": round(a, 4)})
     out = pd.DataFrame(rows)
