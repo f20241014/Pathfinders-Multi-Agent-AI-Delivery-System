@@ -1,0 +1,12 @@
+{"timestamp": 0.0, "event_type": "sim_start", "data": {"mode": "independent"}}
+{"timestamp": 3.05, "event_type": "disruption_event", "data": {"type": "new_order", "target": "edge_1", "magnitude": 1.81, "duration": 28.98}}
+{"timestamp": 10.0, "event_type": "vehicle_arrival", "data": {"vehicle_id": "V1", "node": 101, "current_load": 0.0}}
+{"timestamp": 12.05, "event_type": "disruption_event", "data": {"type": "closure", "target": "edge_8", "magnitude": 1.83, "duration": 29.71}}
+{"timestamp": 20.0, "event_type": "vehicle_arrival", "data": {"vehicle_id": "V1", "node": 102, "current_load": 0.0}}
+{"timestamp": 23.09, "event_type": "disruption_event", "data": {"type": "new_order", "target": "edge_14", "magnitude": 1.27, "duration": 15.0}}
+{"timestamp": 30.0, "event_type": "vehicle_arrival", "data": {"vehicle_id": "V1", "node": 103, "current_load": 0.0}}
+{"timestamp": 40.0, "event_type": "vehicle_arrival", "data": {"vehicle_id": "V1", "node": 104, "current_load": 0.0}}
+{"timestamp": 44.82, "event_type": "disruption_event", "data": {"type": "closure", "target": "edge_3", "magnitude": 2.24, "duration": 18.15}}
+{"timestamp": 46.83, "event_type": "disruption_event", "data": {"type": "traffic_spike", "target": "edge_16", "magnitude": 2.18, "duration": 22.47}}
+{"timestamp": 50.0, "event_type": "vehicle_arrival", "data": {"vehicle_id": "V1", "node": 105, "current_load": 0.0}}
+{"timestamp": 60.0, "event_type": "sim_complete", "data": {}}
