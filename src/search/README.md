@@ -4,6 +4,9 @@
 - `heuristics.py`: `make_heuristic(G)` returns `h(node, goal)`, a lower bound on travel time.
 - `dijkstra.py`: Dijkstra from scratch with `heapq`, plus the shared `SearchResult` (path, cost, expanded).
 - `astar.py`: A* from scratch, the same as Dijkstra but ordered by `f = g + h`.
+- `dstar_lite.py` (R7): `DStarLite(adj, start, goal)` incremental search (Koenig & Likhachev 2002) on
+  `{u: {v: cost}}`. `update_edge_cost(u, v, c)` then `get_path()` replans without starting over;
+  `move_start(node)` as the vehicle drives. Tested against `astar.py` in `tests/test_dstar_lite.py`.
 - `../world/graph_loader.py`: `load_road_graph(name)` prepares a graph for search.
 - `../viz/plot_route.py`: draws one A* route to `docs/route_example.png`.
 
