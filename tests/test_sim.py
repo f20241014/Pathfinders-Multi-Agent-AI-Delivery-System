@@ -21,7 +21,7 @@ def sample_graph():
 def test_reproducibility(sample_graph, tmp_path):
     world1 = FakeWorld(sample_graph)
     config1 = {
-        "run_id": "r1", "seed": 42, "log_path": str(tmp_path / "r1.jsonl"),
+        "run_id": "repro_run", "seed": 42, "log_path": str(tmp_path / "r1.jsonl"),
         "disruption_rate_per_hour": 10.0
     }
     env1 = DeliverySimEnvironment(world1, config1)
@@ -29,7 +29,7 @@ def test_reproducibility(sample_graph, tmp_path):
 
     world2 = FakeWorld(sample_graph)
     config2 = {
-        "run_id": "r2", "seed": 42, "log_path": str(tmp_path / "r2.jsonl"),
+        "run_id": "repro_run", "seed": 42, "log_path": str(tmp_path / "r2.jsonl"),
         "disruption_rate_per_hour": 10.0
     }
     env2 = DeliverySimEnvironment(world2, config2)
