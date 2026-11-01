@@ -1,10 +1,11 @@
 # src/sim/world.py
 import math
 import logging
-from typing import Dict, List, Tuple, Optional, Callable
+from typing import Dict, List, Tuple, Callable
 from src.sim.models import Event
 
 logger = logging.getLogger(__name__)
+
 
 class World:
     def __init__(self, graph=None, traffic=None, predictor=None):
@@ -22,10 +23,10 @@ class World:
     def from_defaults(cls, seed: int = 42):
         from src.world.graph_loader import load_road_graph
         G = load_road_graph("secunderabad")
-        
+
         traffic = None
         predictor = None
-        
+
         try:
             from src.world.traffic_model import TrafficModel
             traffic = TrafficModel.from_graph("data/raw/metr-la.h5", seed=seed)
@@ -74,7 +75,7 @@ class World:
             return math.inf
 
         base_time = self._get_free_flow_time(u, v)
-        
+
         # Traffic Model Multiplier (R6)
         t_mult = 1.0
         if self.traffic is not None:
@@ -115,6 +116,7 @@ class World:
 
 class FakeWorld:
     """Mock World object for testing without external data dependencies."""
+
     def __init__(self, graph, speed_mps: float = 10.0, multiplier: float = 1.0):
         self.G = graph
         self.speed_mps = speed_mps
@@ -145,21 +147,21 @@ class FakeWorld:
     def edge_time(self, u: int, v: int, t: float) -> float:
         if self.is_blocked(u, v, t):
             return math.inf
-        
+
         length = 100.0
         if self.G.has_edge(u, v):
             edges = self.G[u][v]
             length = min(data.get("length", 100.0) for data in edges.values())
-        
+
         base_time = (length / self.speed_mps) * self.multiplier
-        
+
         spike_mult = 1.0
         edge_key = (u, v)
         if edge_key in self.active_disruptions:
             for ev in self.active_disruptions[edge_key]:
                 if ev.type == "traffic_spike" and ev.t <= t < (ev.t + ev.duration):
                     spike_mult *= ev.magnitude
-                    
+
         return base_time * spike_mult
 
     def predicted_time(self, u: int, v: int, t: float, horizon_min: int = 15) -> float:

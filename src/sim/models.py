@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+
 @dataclass
 class Order:
     id: str
@@ -13,6 +14,7 @@ class Order:
     service_time: float
     release_time: float
 
+
 @dataclass
 class Vehicle:
     id: str
@@ -23,6 +25,7 @@ class Vehicle:
     current_edge: Optional[tuple] = None
     load: float = 0.0
     remaining_route: List[int] = field(default_factory=list)
+
 
 @dataclass
 class Event:

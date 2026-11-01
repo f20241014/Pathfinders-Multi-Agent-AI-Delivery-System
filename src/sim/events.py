@@ -3,13 +3,20 @@ import numpy as np
 from typing import Callable, List, Tuple
 from src.sim.models import Event
 
+
 class EventGenerator:
-    def __init__(self, env, rng: np.random.Generator, world, event_callback: Callable[[Event], None]):
+    def __init__(
+        self,
+        env,
+        rng: np.random.Generator,
+        world,
+        event_callback: Callable[[Event], None],
+    ):
         self.env = env
         self.rng = rng
         self.world = world
         self.event_callback = event_callback
-        
+
         # Extract edge list from network graph
         self.edges: List[Tuple[int, int]] = list(self.world.graph().edges())
 
@@ -27,8 +34,9 @@ class EventGenerator:
             t_curr = self.env.now
 
             # Decision D11 Distribution: 40% Traffic Spike, 30% Closure, 30% New Order
-            event_type = self.rng.choice(["traffic_spike", "closure", "new_order"], p=[0.4, 0.3, 0.3])
-            
+            event_type = self.rng.choice(
+                ["traffic_spike", "closure", "new_order"], p=[0.4, 0.3, 0.3])
+
             edge = self.edges[self.rng.integers(0, len(self.edges))]
             target_str = f"{edge[0]},{edge[1]}"
 
@@ -45,7 +53,7 @@ class EventGenerator:
 
             if event_type in ["traffic_spike", "closure"]:
                 self.world.add_disruption(event)
-                
+
             # TODO (Week 3): Guard closures to ensure pending destinations remain connected
             # TODO (Week 3): Dispatch new_order to R3's Order Generator
 

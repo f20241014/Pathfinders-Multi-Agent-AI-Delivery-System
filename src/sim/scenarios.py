@@ -3,10 +3,11 @@ import numpy as np
 from src.search.astar import astar
 from src.search.heuristics import make_heuristic
 
+
 def make_demo_config(world, seed: int = 42) -> dict:
     rng = np.random.default_rng(seed)
     nodes = list(world.graph().nodes())
-    
+
     depot = int(rng.choice(nodes))
     stop1 = int(rng.choice(nodes))
     stop2 = int(rng.choice(nodes))

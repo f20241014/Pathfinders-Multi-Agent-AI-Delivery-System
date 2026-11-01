@@ -10,12 +10,13 @@ from src.sim.world import World
 
 logger = logging.getLogger(__name__)
 
+
 class DeliverySimEnvironment:
     def __init__(self, world: World, config: dict):
         self.env = simpy.Environment()
         self.world = world
         self.config = config
-        
+
         self.run_id = config.get("run_id", "default")
         self.mode = config.get("mode", "independent")
         self.seed = config.get("seed", 42)
@@ -29,7 +30,7 @@ class DeliverySimEnvironment:
 
         self.vehicles: Dict[str, Vehicle] = {}
         self.orders: Dict[str, Order] = {}
-        
+
         self.event_gen = EventGenerator(self.env, self.rng, self.world, self.handle_event)
 
     def subscribe(self, callback: Callable[[Event], None]):
@@ -39,7 +40,8 @@ class DeliverySimEnvironment:
         self.logger.log(
             self.run_id, self.mode, self.seed, self.scenario, self.rate,
             self.env.now, "env", "disruption",
-            {"type": event.type, "target": event.target, "magnitude": event.magnitude, "duration": event.duration}
+            {"type": event.type, "target": event.target,
+                "magnitude": event.magnitude, "duration": event.duration}
         )
         for sub in self.subscribers:
             sub(event)
@@ -70,7 +72,8 @@ class DeliverySimEnvironment:
             vehicle.current_edge = (current_node, next_node)
             self.logger.log(
                 self.run_id, self.mode, self.seed, self.scenario, self.rate,
-                self.env.now, vehicle.id, "edge_enter", {"edge": [current_node, next_node], "cost": edge_cost}
+                self.env.now, vehicle.id, "edge_enter", {
+                    "edge": [current_node, next_node], "cost": edge_cost}
             )
 
             # Traversal time is fixed upon entering the edge
@@ -100,14 +103,16 @@ class DeliverySimEnvironment:
                 if vehicle.load + order.demand > vehicle.capacity:
                     self.logger.log(
                         self.run_id, self.mode, self.seed, self.scenario, self.rate,
-                        self.env.now, vehicle.id, "capacity_blocked", {"order_id": order.id, "demand": order.demand}
+                        self.env.now, vehicle.id, "capacity_blocked", {
+                            "order_id": order.id, "demand": order.demand}
                     )
                 else:
                     yield self.env.timeout(order.service_time)
                     vehicle.load += order.demand
                     self.logger.log(
                         self.run_id, self.mode, self.seed, self.scenario, self.rate,
-                        self.env.now, vehicle.id, "stop_served", {"order_id": order.id, "load": vehicle.load}
+                        self.env.now, vehicle.id, "stop_served", {
+                            "order_id": order.id, "load": vehicle.load}
                     )
                     del stops_by_node[next_node]
 
@@ -116,13 +121,15 @@ class DeliverySimEnvironment:
         self.env.process(self.vehicle_process(vehicle, stops))
 
     def run(self, duration_seconds: float = 14400.0):
-        self.logger.log(self.run_id, self.mode, self.seed, self.scenario, self.rate, 0.0, "env", "sim_start", {})
-        
+        self.logger.log(self.run_id, self.mode, self.seed, self.scenario,
+                        self.rate, 0.0, "env", "sim_start", {})
+
         self.env.process(self.event_gen.generate_poisson_events(
-            rate_per_hour=self.rate, 
+            rate_per_hour=self.rate,
             total_duration_s=duration_seconds
         ))
-        
+
         self.env.run(until=duration_seconds)
-        
-        self.logger.log(self.run_id, self.mode, self.seed, self.scenario, self.rate, self.env.now, "env", "sim_complete", {})
+
+        self.logger.log(self.run_id, self.mode, self.seed, self.scenario,
+                        self.rate, self.env.now, "env", "sim_complete", {})

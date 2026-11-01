@@ -8,6 +8,7 @@ from src.sim.models import Vehicle, Order
 
 logging.basicConfig(level=logging.WARNING)
 
+
 def main():
     parser = argparse.ArgumentParser(description="Run Delivery Simulation")
     parser.add_argument("--config", type=str, default="configs/sim_default.yaml")
@@ -32,6 +33,7 @@ def main():
 
     env.run(duration_seconds=config.get("duration_seconds", 14400.0))
     print(f"Simulation complete. Log written to logs/{config.get('run_id', 'default')}.jsonl")
+
 
 if __name__ == "__main__":
     main()
