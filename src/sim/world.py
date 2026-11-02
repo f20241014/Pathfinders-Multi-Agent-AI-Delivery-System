@@ -1,8 +1,19 @@
+"""Road world for the simulator: travel times, closures and traffic spikes.
+
+All times are absolute seconds from midnight (t = start_time_s + env.now).
+"""
 import logging
-from typing import Dict, Tuple
+import math
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Tuple
+
 import networkx as nx
 
 logger = logging.getLogger(__name__)
+
+EdgeId = Tuple[int, int, int]
+DEFAULT_MAP_PATH = "data/processed/secunderabad.graphml"
+DEFAULT_LENGTH_M = 100.0
 
 
 class World:
@@ -10,90 +21,164 @@ class World:
         self,
         graph: nx.MultiDiGraph,
         traffic_model=None,
+        predictor=None,
         speed_mps: float = 10.0,
     ):
-        self.graph = graph
+        self.G = graph
         self.traffic_model = traffic_model
+        self.predictor = predictor
         self.speed_mps = speed_mps
-        self.disruptions: Dict[Tuple[int, int, int], float] = {}
+        # edge -> list of (start_t, expiry_t)
+        self.closures: Dict[EdgeId, List[Tuple[float, float]]] = {}
+        # edge -> list of (start_t, expiry_t, multiplier)
+        self.spikes: Dict[EdgeId, List[Tuple[float, float, float]]] = {}
+        self._warned_default_length = False
 
-    def free_flow_time(self, u: int, v: int, key: int = 0) -> float:
-        if not self.graph.has_edge(u, v, key):
-            raise KeyError(
-                f"Edge ({u}, {v}, {key}) not found in road graph."
-            )
-        data = self.graph[u][v][key]
-        weight = data.get("weight", 100.0)
-        return weight / self.speed_mps
+    def graph(self) -> nx.MultiDiGraph:
+        return self.G
 
-    def is_blocked(
-        self, u: int, v: int, key: int = 0, t_seconds: float = 0.0
-    ) -> bool:
-        if not self.graph.has_edge(u, v, key):
-            raise KeyError(
-                f"Edge ({u}, {v}, {key}) not found in road graph."
-            )
-        expiry = self.disruptions.get((u, v, key), 0.0)
-        return t_seconds < expiry
+    def _check_edge(self, u, v, key) -> None:
+        if not self.G.has_edge(u, v, key):
+            raise KeyError(f"Edge ({u}, {v}, {key}) not found in road graph.")
 
-    def edge_time(
-        self, u: int, v: int, key: int = 0, t_seconds: float = 0.0
-    ) -> float:
-        base_time = self.free_flow_time(u, v, key)
-        if self.is_blocked(u, v, key, t_seconds):
-            return float("inf")
-        multiplier = 1.0
-        if self.traffic_model is not None:
-            multiplier = self.traffic_model.get_multiplier(
-                (u, v, key), t_seconds
-            )
-        return base_time * multiplier
-
-    def add_disruption(
-        self, u: int, v: int, key: int, expiry_t_seconds: float
-    ):
-        self.disruptions[(u, v, key)] = expiry_t_seconds
-
-    @classmethod
-    def from_defaults(
-        cls, map_path: str = "data/processed/secunderabad.graphml"
-    ):
-        G = nx.MultiDiGraph()
-        G.add_edge(1, 2, key=0, weight=100.0)
-        traffic_model = None
-        try:
-            from src.traffic.model import TrafficModel
-            traffic_model = TrafficModel.from_graph(map_path)
-        except (ImportError, FileNotFoundError) as e:
+    # ------------------------------------------------------------------
+    # Static travel time
+    # ------------------------------------------------------------------
+    def free_flow_time(self, u, v, key: int = 0) -> float:
+        """Seconds to drive the edge with no traffic."""
+        self._check_edge(u, v, key)
+        data = self.G[u][v][key]
+        if "free_flow_time" in data:          # set by R2's load_road_graph
+            return float(data["free_flow_time"])
+        if "length" in data:
+            return float(data["length"]) / self.speed_mps
+        if "weight" in data:
+            return float(data["weight"]) / self.speed_mps
+        if not self._warned_default_length:
             logger.warning(
-                "Falling back to free-flow traffic model: %s", e
+                "Edge (%s, %s, %s) has no free_flow_time/length/weight; "
+                "assuming %.0f m (warning shown once).",
+                u, v, key, DEFAULT_LENGTH_M,
             )
-        except Exception as e:
-            logger.error(
-                "Error loading traffic model: %s", e, exc_info=True
+            self._warned_default_length = True
+        return DEFAULT_LENGTH_M / self.speed_mps
+
+    def edge_key(self, u, v) -> int:
+        """Key of the fastest road u -> v (not always 0 on the real graph)."""
+        if not self.G.has_edge(u, v):
+            raise KeyError(f"Edge ({u}, {v}) not found in road graph.")
+        return min(self.G[u][v], key=lambda k: self.free_flow_time(u, v, k))
+
+    # ------------------------------------------------------------------
+    # Disruptions
+    # ------------------------------------------------------------------
+    def add_disruption(
+        self, u, v, key, expiry_t_seconds: float,
+        start_t_seconds: float = -math.inf,
+    ) -> None:
+        """Close the road for start_t_seconds <= t < expiry_t_seconds."""
+        self._check_edge(u, v, key)
+        self.closures.setdefault((u, v, key), []).append(
+            (start_t_seconds, expiry_t_seconds)
+        )
+
+    def add_spike(
+        self, u, v, key, multiplier: float, expiry_t_seconds: float,
+        start_t_seconds: float = -math.inf,
+    ) -> None:
+        """Multiply the road's travel time while start <= t < expiry."""
+        self._check_edge(u, v, key)
+        self.spikes.setdefault((u, v, key), []).append(
+            (start_t_seconds, expiry_t_seconds, multiplier)
+        )
+
+    def is_blocked(self, u, v, key: int = 0, t_seconds: float = 0.0) -> bool:
+        self._check_edge(u, v, key)
+        return any(
+            start <= t_seconds < expiry
+            for start, expiry in self.closures.get((u, v, key), [])
+        )
+
+    def spike_multiplier(self, u, v, key: int = 0, t_seconds: float = 0.0) -> float:
+        self._check_edge(u, v, key)
+        mult = 1.0
+        for start, expiry, m in self.spikes.get((u, v, key), []):
+            if start <= t_seconds < expiry:
+                mult *= m
+        return mult
+
+    # ------------------------------------------------------------------
+    # Dynamic travel time
+    # ------------------------------------------------------------------
+    def traffic_multiplier(self, u, v, t_seconds: float) -> float:
+        """R6 ground-truth congestion multiplier, or 1.0 without a model."""
+        if self.traffic_model is None:
+            return 1.0
+        # TODO(R6): confirm TrafficModel expects absolute seconds from
+        # midnight (our clock) and that step 0 of its table is 00:00.
+        try:
+            return float(
+                self.traffic_model.actual_multiplier_uv(str(u), str(v), t_seconds)
             )
-            raise e
-        return cls(G, traffic_model=traffic_model)
+        except KeyError:
+            return 1.0
+
+    def edge_time(self, u, v, key: int = 0, t_seconds: float = 0.0) -> float:
+        """Actual travel time: free-flow x traffic x spikes, or inf if closed."""
+        if self.is_blocked(u, v, key, t_seconds):
+            return math.inf
+        return (
+            self.free_flow_time(u, v, key)
+            * self.traffic_multiplier(u, v, t_seconds)
+            * self.spike_multiplier(u, v, key, t_seconds)
+        )
+
+    def predicted_time(self, u, v, t_seconds: float, horizon_min: int = 15) -> float:
+        """R6 forecast of the travel time; free-flow if no predictor."""
+        free_flow = self.free_flow_time(u, v, self.edge_key(u, v))
+        if self.predictor is None or self.traffic_model is None:
+            return free_flow
+        edge_idx = self.traffic_model.edge_index.get((str(u), str(v)))
+        if edge_idx is None:
+            return free_flow
+        return float(
+            self.predictor.predicted_time(edge_idx, t_seconds, horizon_min, free_flow)
+        )
+
+    def cost_fn_at(self, t_seconds: float) -> Callable:
+        """Edge cost for R2's astar/dijkstra(cost_fn=...) frozen at time t."""
+        def cost(u, v, data=None) -> float:
+            return self.edge_time(u, v, self.edge_key(u, v), t_seconds)
+        return cost
+
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
+    @classmethod
+    def from_defaults(cls, map_path: str = DEFAULT_MAP_PATH, seed: int = 42) -> "World":
+        """Real Secunderabad graph plus R6 traffic model when available."""
+        from src.world.graph_loader import load_road_graph
+
+        G = load_road_graph(Path(map_path).stem)
+
+        traffic_model: Optional[object] = None
+        predictor: Optional[object] = None
+        try:
+            from src.world.traffic_model import TrafficModel
+            traffic_model = TrafficModel.from_graph(map_path, seed=seed)
+        except (ImportError, FileNotFoundError) as e:
+            logger.warning("Traffic model unavailable, using free-flow times: %s", e)
+        if traffic_model is not None:
+            try:
+                from src.prediction.predictor import Predictor
+                predictor = Predictor(traffic_model)
+            except (ImportError, FileNotFoundError) as e:
+                logger.warning("Predictor unavailable, predictions use free-flow: %s", e)
+        return cls(G, traffic_model=traffic_model, predictor=predictor)
 
 
 class FakeWorld(World):
+    """World with no traffic model, for tests. Same behaviour and errors."""
+
     def __init__(self, graph: nx.MultiDiGraph, speed_mps: float = 10.0):
-        super().__init__(graph, traffic_model=None, speed_mps=speed_mps)
-
-    def is_blocked(
-        self, u: int, v: int, key: int = 0, t_seconds: float = 0.0
-    ) -> bool:
-        if not self.graph.has_edge(u, v, key):
-            raise KeyError(
-                f"Edge ({u}, {v}, {key}) not found in road graph."
-            )
-        return super().is_blocked(u, v, key, t_seconds)
-
-    def edge_time(
-        self, u: int, v: int, key: int = 0, t_seconds: float = 0.0
-    ) -> float:
-        if not self.graph.has_edge(u, v, key):
-            raise KeyError(
-                f"Edge ({u}, {v}, {key}) not found in road graph."
-            )
-        return super().edge_time(u, v, key, t_seconds)
+        super().__init__(graph, traffic_model=None, predictor=None, speed_mps=speed_mps)

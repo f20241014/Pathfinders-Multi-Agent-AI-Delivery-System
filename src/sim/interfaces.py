@@ -1,11 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 class Route:
-    def __init__(self, nodes: List[int], expected_times: List[float]):
+    def __init__(
+        self,
+        nodes: List[int],
+        expected_times: List[float],
+        order_ids: Optional[List[str]] = None,
+    ):
         self.nodes = nodes
         self.expected_times = expected_times
+        self.order_ids = list(order_ids) if order_ids is not None else []
 
 
 class Planner(ABC):

@@ -1,8 +1,20 @@
-from typing import Dict, Any, List
+"""SimPy delivery environment: vehicles drive routes, serve orders, log events.
+
+All times are absolute seconds from midnight: t = start_time_s + env.now.
+"""
+import os
+from typing import Any, Callable, Dict, List, Optional, Set
+
 import numpy as np
 import simpy
-from src.sim.models import Vehicle, Order
+
+from src.sim.events import EventGenerator
 from src.sim.logger import SimulationLogger
+from src.sim.models import Event, Order, Vehicle
+
+BLOCKED_POLL_S = 60.0
+DEFAULT_START_TIME_S = 21600.0     # 06:00
+DEFAULT_DURATION_S = 14400.0       # 4 hours
 
 
 class DeliverySimEnvironment:
@@ -10,141 +22,170 @@ class DeliverySimEnvironment:
         self.world = world
         self.config = config
         self.env = simpy.Environment()
-        self.start_time_s = config.get("start_time_s", 21600.0)
-        self.seed = config.get("seed", 42)
+        self.run_id = str(config.get("run_id", "sim"))
+        self.mode = str(config.get("mode", "independent"))
+        self.scenario = str(config.get("scenario", "default"))
+        self.seed = int(config.get("seed", 42))
+        self.disruption_rate = float(config.get("disruption_rate_per_hour", 0.0))
+        self.start_time_s = float(config.get("start_time_s", DEFAULT_START_TIME_S))
         self.rng = np.random.default_rng(self.seed)
-        log_path = config.get("log_path", "logs/sim.jsonl")
-        self.logger = SimulationLogger(log_path)
+        self.log_path = config.get("log_path") or os.path.join(
+            "logs", f"{self.run_id}.jsonl"
+        )
+        self.logger = SimulationLogger(
+            self.log_path, self.run_id, self.mode, self.seed,
+            self.scenario, self.disruption_rate,
+        )
         self.vehicles: Dict[str, Vehicle] = {}
         self.orders: List[Order] = []
+        self.subscribers: List[Callable[[Event], None]] = []
+        self.n_delivered = 0
+        self.n_failed = 0
 
+    # ------------------------------------------------------------------
+    # Clock, logging, events
+    # ------------------------------------------------------------------
     def get_current_time(self) -> float:
         return self.start_time_s + self.env.now
 
-    def add_order(self, order: Order):
-        """Add order to environment for R3 integration."""
-        self.orders.append(order)
+    def log_event(self, event_type: str, payload: dict, agent_id: str = "env") -> None:
+        self.logger.log(event_type, self.get_current_time(), payload, agent_id=agent_id)
 
-    def log_event(self, event_type: str, payload: dict):
-        abs_t = self.get_current_time()
-        self.logger.log(event_type, abs_t, payload)
+    def subscribe(self, callback: Callable[[Event], None]) -> None:
+        """Register a listener for world events (disruption, new_order)."""
+        self.subscribers.append(callback)
 
-    def add_vehicle(
-        self, vehicle: Vehicle, assigned_orders: List[Order]
-    ):
+    def handle_event(self, event: Event) -> None:
+        self.logger.log(event.event_type, event.t, event.payload)
+        for callback in self.subscribers:
+            callback(event)
+
+    # ------------------------------------------------------------------
+    # Setup
+    # ------------------------------------------------------------------
+    def add_order(self, order: Order) -> None:
+        """Register an order (R3 hand-off for dynamic orders)."""
+        if order not in self.orders:
+            self.orders.append(order)
+
+    def add_vehicle(self, vehicle: Vehicle, assigned_orders: List[Order]) -> None:
         self.vehicles[vehicle.id] = vehicle
-        for o in assigned_orders:
-            if o not in self.orders:
-                self.orders.append(o)
-        self.env.process(
-            self._vehicle_process(vehicle, list(assigned_orders))
+        for order in assigned_orders:
+            self.add_order(order)
+        self.env.process(self._vehicle_process(vehicle, list(assigned_orders)))
+
+    # ------------------------------------------------------------------
+    # Vehicle behaviour
+    # ------------------------------------------------------------------
+    def _fail(self, vehicle: Vehicle, order: Order, reason: str) -> None:
+        self.n_failed += 1
+        self.log_event(
+            "order_failed",
+            {"order_id": order.id, "node": order.node, "reason": reason},
+            agent_id=vehicle.id,
         )
 
-    def _vehicle_process(
-        self, vehicle: Vehicle, assigned_orders: List[Order]
-    ):
-        pending_orders = list(assigned_orders)
-        retry_queue: List[Order] = []
+    def _serve_node(self, vehicle: Vehicle, pending: List[Order], deferred: Set[str]):
+        """Serve every pending order at the vehicle's current node."""
+        for order in [o for o in pending if o.node == vehicle.current_node]:
+            now = self.get_current_time()
+            if now > order.tw_end:
+                self._fail(vehicle, order, "time_window_missed")
+                pending.remove(order)
+                continue
+            ready_t = max(order.tw_start, order.release_time)
+            if ready_t > order.tw_end:
+                self._fail(vehicle, order, "invalid_time_window")
+                pending.remove(order)
+                continue
+            if vehicle.load + order.demand > vehicle.capacity:
+                self.log_event(
+                    "capacity_blocked",
+                    {
+                        "order_id": order.id,
+                        "demand": order.demand,
+                        "load": vehicle.load,
+                        "capacity": vehicle.capacity,
+                    },
+                    agent_id=vehicle.id,
+                )
+                deferred.add(order.id)    # retried if the route revisits this node
+                continue
+            if ready_t > now:             # early: wait for the window / release
+                yield self.env.timeout(ready_t - now)
+            yield self.env.timeout(order.service_time)
+            vehicle.load += order.demand
+            self.n_delivered += 1
+            self.log_event(
+                "order_delivered",
+                {"order_id": order.id, "node": order.node, "demand": order.demand},
+                agent_id=vehicle.id,
+            )
+            pending.remove(order)
+            deferred.discard(order.id)
+
+    def _vehicle_process(self, vehicle: Vehicle, assigned_orders: List[Order]):
+        pending = list(assigned_orders)
+        deferred: Set[str] = set()
+
+        # Orders at the starting node are served before driving.
+        yield from self._serve_node(vehicle, pending, deferred)
 
         while vehicle.remaining_route:
-            next_node = vehicle.remaining_route.pop(0)
+            v = vehicle.remaining_route.pop(0)
             u = vehicle.current_node
-            v = next_node
+            if v == u:                    # route lists the current node: skip it
+                continue
+            key = self.world.edge_key(u, v)
 
-            # Road disruption wait loop
-            while True:
-                curr_t = self.get_current_time()
-                if self.world.is_blocked(u, v, 0, curr_t):
-                    self.log_event(
-                        "blocked_wait",
-                        {"vehicle_id": vehicle.id, "edge": (u, v, 0)},
-                    )
-                    yield self.env.timeout(60.0)
-                else:
-                    break
+            # TODO(R7): re-route around the closure instead of waiting.
+            while self.world.is_blocked(u, v, key, self.get_current_time()):
+                self.log_event("blocked_wait", {"edge": [u, v, key]}, agent_id=vehicle.id)
+                yield self.env.timeout(BLOCKED_POLL_S)
 
-            curr_t = self.get_current_time()
-            travel_time = self.world.edge_time(u, v, 0, curr_t)
+            travel_s = self.world.edge_time(u, v, key, self.get_current_time())
+            vehicle.current_edge = (u, v, key)
             self.log_event(
                 "edge_enter",
-                {
-                    "vehicle_id": vehicle.id,
-                    "edge": (u, v, 0),
-                    "expected_duration": travel_time,
-                },
+                {"edge": [u, v, key], "expected_duration": travel_s},
+                agent_id=vehicle.id,
             )
-            yield self.env.timeout(travel_time)
+            yield self.env.timeout(travel_s)
             vehicle.current_node = v
+            vehicle.current_edge = None
+            self.log_event("edge_exit", {"node": v}, agent_id=vehicle.id)
 
-            node_orders = [o for o in pending_orders if o.node == v]
-            for order in node_orders:
-                curr_t = self.get_current_time()
-                # Time window check
-                if curr_t > order.tw_end:
-                    self.log_event(
-                        "order_failed",
-                        {
-                            "order_id": order.id,
-                            "reason": "time_window_missed",
-                            "tw_end": order.tw_end,
-                        },
-                    )
-                    pending_orders.remove(order)
-                    continue
+            yield from self._serve_node(vehicle, pending, deferred)
 
-                # Capacity check and retry deferral
-                if vehicle.load + order.demand > vehicle.capacity:
-                    self.log_event(
-                        "capacity_blocked",
-                        {
-                            "vehicle_id": vehicle.id,
-                            "order_id": order.id,
-                            "demand": order.demand,
-                            "capacity": vehicle.capacity,
-                        },
-                    )
-                    if order not in retry_queue:
-                        retry_queue.append(order)
-                    continue
-
-                vehicle.load += order.demand
-                yield self.env.timeout(order.service_time)
-                self.log_event(
-                    "order_delivered",
-                    {"vehicle_id": vehicle.id, "order_id": order.id},
-                )
-                pending_orders.remove(order)
-                if order in retry_queue:
-                    retry_queue.remove(order)
-
-        # Mark unservable deferred orders as order_failed
-        for order in retry_queue:
-            self.log_event(
-                "order_failed",
-                {
-                    "order_id": order.id,
-                    "reason": "capacity_exceeded_unservable",
-                },
+        # End of route: whatever is left could not be delivered.
+        # Load never decreases yet (no depot unloading), so a deferred order can
+        # never succeed on a retry. TODO(R4/R5): unload at depot / re-plan.
+        for order in pending:
+            reason = (
+                "capacity_exceeded_unservable" if order.id in deferred else "not_on_route"
             )
+            self._fail(vehicle, order, reason)
 
-    def run(self, duration_seconds: float):
-        disruption_rate = self.config.get(
-            "disruption_rate_per_hour", 0.0
-        )
-        if disruption_rate > 0.0:
-            from src.sim.events import EventGenerator
+    # ------------------------------------------------------------------
+    # Run
+    # ------------------------------------------------------------------
+    def run(self, duration_seconds: Optional[float] = None) -> None:
+        if duration_seconds is None:
+            duration_seconds = float(self.config.get("duration_seconds", DEFAULT_DURATION_S))
+        self.log_event("sim_start", {
+            "start_time_s": self.start_time_s,
+            "duration_seconds": duration_seconds,
+            "n_vehicles": len(self.vehicles),
+            "n_orders": len(self.orders),
+        })
+        if self.disruption_rate > 0:
             gen = EventGenerator(
-                self.env,
-                self.rng,
-                self.world,
-                lambda e: self.logger.log(
-                    e.event_type, e.t, e.payload
-                ),
+                self.env, self.rng, self.world, self.handle_event,
                 start_time_s=self.start_time_s,
             )
-            self.env.process(
-                gen.schedule_disruptions(
-                    disruption_rate, duration_seconds
-                )
-            )
+            self.env.process(gen.schedule_disruptions(self.disruption_rate, duration_seconds))
         self.env.run(until=duration_seconds)
+        self.log_event("sim_complete", {
+            "delivered": self.n_delivered,
+            "failed": self.n_failed,
+        })

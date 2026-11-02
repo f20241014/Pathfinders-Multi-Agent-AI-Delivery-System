@@ -22,18 +22,12 @@ jobs:
           python -m pip install --upgrade pip
           grep -vE '^(torch|h5py)' requirements.txt > /tmp/req.txt
           pip install -r /tmp/req.txt
-          # TODO: Remove osmnx and pyproj line below once R2's PR merges them into requirements.txt
-          pip install flake8 pytest osmnx pyproj
+          pip install flake8
 
       - name: Lint with Flake8
         run: |
-          flake8 src/sim tests/test_sim.py --max-line-length=100
+          flake8 src/sim tests/test_sim.py tests/test_sim_integration.py --max-line-length=100
 
       - name: Run Pytest Suite
-        run: |
-          pytest --ignore=tests/test_prediction.py -q
-      - name: Test with pytest
-        env:
-          PYTHONPATH: .
         run: |
           pytest --ignore=tests/test_prediction.py -q

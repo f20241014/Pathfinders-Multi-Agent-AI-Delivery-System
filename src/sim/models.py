@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional, Tuple
 
 
 @dataclass
@@ -22,6 +22,13 @@ class Vehicle:
     current_node: int
     remaining_route: List[int] = field(default_factory=list)
     load: float = 0.0
+    allowed_road_classes: Optional[List[str]] = None
+    current_edge: Optional[Tuple[int, int, int]] = None
+
+    @property
+    def current_load(self) -> float:
+        """Alias of load (R3's rules read current_load)."""
+        return self.load
 
 
 @dataclass
