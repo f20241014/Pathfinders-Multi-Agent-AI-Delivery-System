@@ -1,28 +1,26 @@
-# src/sim/logger.py
 import json
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any
+from src.sim.interfaces import MetricsLogger
 
 
-class SimulationLogger:
-    def __init__(self, run_id: str = "default_run", output_path: Optional[str] = None):
-        if output_path is None:
-            output_path = f"logs/{run_id}.jsonl"
-        self.output_path = output_path
-        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+class SimulationLogger(MetricsLogger):
+    def __init__(self, log_path: str, mode: str = "w"):
+        self.log_path = log_path
+        dirname = os.path.dirname(self.log_path)
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
+        # Initialize/overwrite log file for clean runs
+        with open(self.log_path, mode, encoding="utf-8"):
+            pass
 
-    def log(self, run_id: str, mode: str, seed: int, scenario: str, rate: float,
-            t: float, agent_id: str, event: str, payload: Dict[str, Any]):
-        entry = {
-            "run_id": run_id,
-            "mode": mode,
-            "seed": seed,
-            "scenario": scenario,
-            "rate": rate,
-            "t": round(t, 2),
-            "agent_id": agent_id,
-            "event": event,
-            "payload": payload
+    def log(
+        self, event_type: str, timestamp: float, payload: Dict[str, Any]
+    ) -> None:
+        record = {
+            "t": timestamp,
+            "event_type": event_type,
+            "payload": payload,
         }
-        with open(self.output_path, "a") as f:
-            f.write(json.dumps(entry) + "\n")
+        with open(self.log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")

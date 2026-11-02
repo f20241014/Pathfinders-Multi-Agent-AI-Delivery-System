@@ -1,38 +1,51 @@
-# src/sim/run.py
 import argparse
 import yaml
-import logging
 from src.sim.world import World
-from src.sim.environment import DeliverySimEnvironment
 from src.sim.models import Vehicle, Order
-
-logging.basicConfig(level=logging.WARNING)
+from src.sim.environment import DeliverySimEnvironment
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run Delivery Simulation")
-    parser.add_argument("--config", type=str, default="configs/sim_default.yaml")
+    parser = argparse.ArgumentParser(
+        description="Run headless delivery simulation."
+    )
+    parser.add_argument(
+        "--config", default="configs/sim_default.yaml", help="Path to config"
+    )
     args = parser.parse_args()
 
-    with open(args.config, "r") as f:
+    with open(args.config, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    world = World.from_defaults(seed=config.get("seed", 42))
+    map_path = config.get("map_path", "data/processed/secunderabad.graphml")
+    world = World.from_defaults(map_path)
+
     env = DeliverySimEnvironment(world, config)
 
-    orders = [Order(**o) for o in config.get("orders", [])]
-    for v_cfg in config.get("vehicles", []):
-        v = Vehicle(
-            id=v_cfg["id"],
-            depot_node=v_cfg["depot_node"],
-            capacity=v_cfg["capacity"],
-            current_node=v_cfg["current_node"],
-            remaining_route=list(v_cfg["route"])
-        )
-        env.add_vehicle(v, orders)
+    # TODO(R4/R5): Planner and vehicle order allocation will assign subset of orders to vehicles
+    v1 = Vehicle(
+        id="V1",
+        depot_node=1,
+        capacity=100.0,
+        current_node=1,
+        remaining_route=[2],
+    )
+    o1 = Order(
+        id="O1",
+        node=2,
+        demand=20.0,
+        priority=1,
+        tw_start=21600.0,
+        tw_end=43200.0,
+        service_time=60.0,
+    )
 
-    env.run(duration_seconds=config.get("duration_seconds", 14400.0))
-    print(f"Simulation complete. Log written to logs/{config.get('run_id', 'default')}.jsonl")
+    env.add_vehicle(v1, [o1])
+    duration = config.get("duration_seconds", 3600.0)
+    env.run(duration)
+
+    log_path = config.get("log_path", "logs/sim.jsonl")
+    print(f"Simulation completed. Log saved to: {log_path}")
 
 
 if __name__ == "__main__":

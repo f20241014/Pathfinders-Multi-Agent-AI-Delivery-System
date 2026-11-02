@@ -14,3 +14,4 @@
 - 2026-10-25 | Nandan (R6) | Claude | pinned requirements.txt via importlib.metadata | verified: file lists 7 pinned packages, pytest still passes
 - 2026-10-28 | Nandan (R6) | Claude | added osmnx to requirements after pytest import error on R2's modules | verified: pip install osmnx, import check, full pytest run: 34 passed
 2026-11-02 | Siddarth (R1) | Refactored sim core, integrated World object, D11 events, JSONL schema, and pytest suite | verified by pytest tests/test_sim.py
+- 2026-11-02 | Siddarth Mediratta | ChatGPT/Gemini | Refactored sim clock alignment, error handling, Predictor interface, and log schema | pytest & flake8 verification

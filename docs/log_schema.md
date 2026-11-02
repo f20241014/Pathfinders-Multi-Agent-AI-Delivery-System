@@ -1,29 +1,22 @@
-#### File 3: `docs/log_schema.md`
-```markdown
-# Simulation Log Schema (`docs/log_schema.md`)
+# Simulation Log Schema
 
 Log files are written line-by-line to `logs/<run_id>.jsonl`. Note: this schema must be confirmed with R8.
 
 ## Column Order & Data Types
-Each row is a JSON object with the exact keys:
+Each line is a JSON object containing the following primary keys:
 
-1. `run_id` (str): Identifier for the simulation run.
-2. `mode` (str): Simulation mode (`independent`, `centralized`, `full`).
-3. `seed` (int): Random seed used.
-4. `scenario` (str): Scenario name.
-5. `rate` (float): Disruption rate per simulated hour.
-6. `t` (float): Simulation timestamp in seconds.
-7. `agent_id` (str): Vehicle ID or `"env"`.
-8. `event` (str): Name of the logged event.
-9. `payload` (dict): Dictionary with event-specific parameters.
+1. `t` (float): Absolute simulation timestamp in seconds from midnight ($\text{start\_time\_s} + \text{env.now}$, where default $\text{start\_time\_s} = 21600.0$, representing 06:00 AM).
+2. `event_type` (str): Name of the logged simulation event.
+3. `payload` (dict): Event-specific key-value details.
 
-## Event Types & Payloads
+## Core Event Types & Payloads
+
 - `sim_start`: `{}`
-- `edge_enter`: `{"edge": [u, v], "cost": float}`
-- `edge_exit`: `{"node": int}`
-- `stop_served`: `{"order_id": str, "load": float}`
-- `blocked_wait`: `{"edge": [u, v]}`
-- `capacity_blocked`: `{"order_id": str, "demand": float}`
-- `disruption`: `{"type": str, "target": str, "magnitude": float, "duration": float}`
-- `order_failed`: `{"order_id": str}`
+- `edge_enter`: `{"vehicle_id": str, "edge": [u, v, key], "expected_duration": float}`
+- `edge_exit`: `{"vehicle_id": str, "node": int}`
+- `order_delivered`: `{"vehicle_id": str, "order_id": str}`
+- `blocked_wait`: `{"vehicle_id": str, "edge": [u, v, key]}`
+- `capacity_blocked`: `{"vehicle_id": str, "order_id": str, "demand": float, "capacity": float}`
+- `disruption`: `{"edge": [u, v, key], "expiry": float}`
+- `order_failed`: `{"order_id": str, "reason": str}`
 - `sim_complete`: `{}`

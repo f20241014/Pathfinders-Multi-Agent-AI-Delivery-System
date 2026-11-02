@@ -32,3 +32,8 @@ jobs:
       - name: Run Pytest Suite
         run: |
           pytest --ignore=tests/test_prediction.py -q
+      - name: Test with pytest
+        env:
+          PYTHONPATH: .
+        run: |
+          pytest --ignore=tests/test_prediction.py -q

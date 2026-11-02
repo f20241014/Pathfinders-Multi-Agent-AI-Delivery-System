@@ -1,45 +1,47 @@
-# src/sim/interfaces.py
-from typing import List, Tuple, Optional, Any
 from abc import ABC, abstractmethod
+from typing import List, Dict, Any
 
 
 class Route:
-    """Owner: R2 (Map & Network Graph Lead)"""
-
-    def __init__(self, path: List[Tuple[int, float, Optional[str]]]):
-        self.path = path  # [(node, planned_eta, order_id_or_none)]
+    def __init__(self, nodes: List[int], expected_times: List[float]):
+        self.nodes = nodes
+        self.expected_times = expected_times
 
 
 class Planner(ABC):
-    """Owner: R4/R5 (Allocation & Routing Leads)"""
     @abstractmethod
-    def plan(self, vehicle: Any, orders: List[Any], world_view: Any, t: float) -> Route:
+    def plan(self, vehicles: List[Any], orders: List[Any]) -> Dict[str, Route]:
         pass
 
 
-class Predictor(ABC):
-    """Owner: R6 (Traffic Predictor Lead)"""
+class PredictorInterface(ABC):
     @abstractmethod
-    def predict(self, edge: Tuple[int, int], t_now: float, horizon: int) -> float:
+    def predict(
+        self, edge_idx: int, t_now_s: float, horizon_min: int = 15
+    ) -> float:
+        """Predict travel time multiplier for an edge at timestamp t_now_s."""
         pass
+
+
+# Alias to maintain backwards compatibility while aligning signature with R6
+Predictor = PredictorInterface
 
 
 class Trigger(ABC):
-    """Owner: R4 (Negotiation Trigger Lead)"""
     @abstractmethod
-    def should_negotiate(self, vehicle: Any, routes: List[Route], t: float) -> bool:
+    def should_replan(self, state: Dict[str, Any]) -> bool:
         pass
 
 
 class Negotiator(ABC):
-    """Owner: R5 (Auction & Bargaining Lead)"""
     @abstractmethod
-    def resolve(self, conflict: Any) -> Any:
+    def negotiate(self, requests: List[Dict[str, Any]]) -> Dict[str, Any]:
         pass
 
 
 class MetricsLogger(ABC):
-    """Owner: R8 (Benchmark & Replay Lead)"""
     @abstractmethod
-    def log(self, event_type: str, timestamp: float, data: dict):
+    def log(
+        self, event_type: str, timestamp: float, payload: Dict[str, Any]
+    ) -> None:
         pass
