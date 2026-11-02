@@ -10,19 +10,24 @@ def main():
         description="Run headless delivery simulation."
     )
     parser.add_argument(
-        "--config", default="configs/sim_default.yaml", help="Path to config"
+        "--config",
+        default="configs/sim_default.yaml",
+        help="Path to config",
     )
     args = parser.parse_args()
 
     with open(args.config, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    map_path = config.get("map_path", "data/processed/secunderabad.graphml")
+    map_path = config.get(
+        "map_path", "data/processed/secunderabad.graphml"
+    )
     world = World.from_defaults(map_path)
 
     env = DeliverySimEnvironment(world, config)
 
-    # TODO(R4/R5): Planner and vehicle order allocation will assign subset of orders to vehicles
+    # TODO(R4/R5): Planner and vehicle order allocation will
+    # assign subset of orders to vehicles
     v1 = Vehicle(
         id="V1",
         depot_node=1,

@@ -10,7 +10,9 @@ class Route:
 
 class Planner(ABC):
     @abstractmethod
-    def plan(self, vehicles: List[Any], orders: List[Any]) -> Dict[str, Route]:
+    def plan(
+        self, vehicles: List[Any], orders: List[Any]
+    ) -> Dict[str, Route]:
         pass
 
 
@@ -19,11 +21,11 @@ class PredictorInterface(ABC):
     def predict(
         self, edge_idx: int, t_now_s: float, horizon_min: int = 15
     ) -> float:
-        """Predict travel time multiplier for an edge at timestamp t_now_s."""
+        """Predict travel time multiplier for edge at t_now_s."""
         pass
 
 
-# Alias to maintain backwards compatibility while aligning signature with R6
+# Alias to maintain backwards compatibility
 Predictor = PredictorInterface
 
 
@@ -35,7 +37,9 @@ class Trigger(ABC):
 
 class Negotiator(ABC):
     @abstractmethod
-    def negotiate(self, requests: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def negotiate(
+        self, requests: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         pass
 
 

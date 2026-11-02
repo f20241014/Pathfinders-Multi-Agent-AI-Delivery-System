@@ -29,7 +29,9 @@ class DeliverySimEnvironment:
         abs_t = self.get_current_time()
         self.logger.log(event_type, abs_t, payload)
 
-    def add_vehicle(self, vehicle: Vehicle, assigned_orders: List[Order]):
+    def add_vehicle(
+        self, vehicle: Vehicle, assigned_orders: List[Order]
+    ):
         self.vehicles[vehicle.id] = vehicle
         for o in assigned_orders:
             if o not in self.orders:
@@ -38,7 +40,9 @@ class DeliverySimEnvironment:
             self._vehicle_process(vehicle, list(assigned_orders))
         )
 
-    def _vehicle_process(self, vehicle: Vehicle, assigned_orders: List[Order]):
+    def _vehicle_process(
+        self, vehicle: Vehicle, assigned_orders: List[Order]
+    ):
         pending_orders = list(assigned_orders)
         retry_queue: List[Order] = []
 
@@ -124,17 +128,23 @@ class DeliverySimEnvironment:
             )
 
     def run(self, duration_seconds: float):
-        disruption_rate = self.config.get("disruption_rate_per_hour", 0.0)
+        disruption_rate = self.config.get(
+            "disruption_rate_per_hour", 0.0
+        )
         if disruption_rate > 0.0:
             from src.sim.events import EventGenerator
             gen = EventGenerator(
                 self.env,
                 self.rng,
                 self.world,
-                lambda e: self.logger.log(e.event_type, e.t, e.payload),
+                lambda e: self.logger.log(
+                    e.event_type, e.t, e.payload
+                ),
                 start_time_s=self.start_time_s,
             )
             self.env.process(
-                gen.schedule_disruptions(disruption_rate, duration_seconds)
+                gen.schedule_disruptions(
+                    disruption_rate, duration_seconds
+                )
             )
         self.env.run(until=duration_seconds)

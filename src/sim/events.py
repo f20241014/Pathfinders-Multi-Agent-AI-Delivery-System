@@ -40,7 +40,8 @@ class EventGenerator:
                 self.event_callback(event)
 
     def schedule_new_orders(self, rate_per_hour: float):
-        # TODO(R3): dynamic new_order dispatching will be handled by R3 order generator
+        # TODO(R3): dynamic new_order dispatching will be
+        # handled by R3 order generator
         rate_per_sec = rate_per_hour / 3600.0
         while True:
             interval = self.rng.exponential(1.0 / rate_per_sec)

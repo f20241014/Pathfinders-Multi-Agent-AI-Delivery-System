@@ -27,7 +27,11 @@ def test_clock_alignment_and_closure_wait(sample_graph, tmp_path):
     }
     env = DeliverySimEnvironment(world, config)
     v = Vehicle(
-        id="V1", depot_node=1, capacity=50.0, current_node=1, remaining_route=[2]
+        id="V1",
+        depot_node=1,
+        capacity=50.0,
+        current_node=1,
+        remaining_route=[2],
     )
     env.add_vehicle(v, [])
     env.run(duration_seconds=700.0)
@@ -74,7 +78,11 @@ def test_time_window_missed_emits_order_failed(sample_graph, tmp_path):
         service_time=10.0,
     )
     v = Vehicle(
-        id="V1", depot_node=1, capacity=50.0, current_node=1, remaining_route=[2]
+        id="V1",
+        depot_node=1,
+        capacity=50.0,
+        current_node=1,
+        remaining_route=[2],
     )
     env.add_vehicle(v, [order])
     env.run(duration_seconds=100.0)
@@ -104,7 +112,11 @@ def test_capacity_blocked_and_retry(sample_graph, tmp_path):
         service_time=10.0,
     )
     v = Vehicle(
-        id="V1", depot_node=1, capacity=50.0, current_node=1, remaining_route=[2]
+        id="V1",
+        depot_node=1,
+        capacity=50.0,
+        current_node=1,
+        remaining_route=[2],
     )
     env.add_vehicle(v, [order])
     env.run(duration_seconds=100.0)

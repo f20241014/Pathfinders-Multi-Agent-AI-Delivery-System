@@ -19,7 +19,9 @@ class World:
 
     def free_flow_time(self, u: int, v: int, key: int = 0) -> float:
         if not self.graph.has_edge(u, v, key):
-            raise KeyError(f"Edge ({u}, {v}, {key}) not found in road graph.")
+            raise KeyError(
+                f"Edge ({u}, {v}, {key}) not found in road graph."
+            )
         data = self.graph[u][v][key]
         weight = data.get("weight", 100.0)
         return weight / self.speed_mps
@@ -28,7 +30,9 @@ class World:
         self, u: int, v: int, key: int = 0, t_seconds: float = 0.0
     ) -> bool:
         if not self.graph.has_edge(u, v, key):
-            raise KeyError(f"Edge ({u}, {v}, {key}) not found in road graph.")
+            raise KeyError(
+                f"Edge ({u}, {v}, {key}) not found in road graph."
+            )
         expiry = self.disruptions.get((u, v, key), 0.0)
         return t_seconds < expiry
 
@@ -61,9 +65,13 @@ class World:
             from src.traffic.model import TrafficModel
             traffic_model = TrafficModel.from_graph(map_path)
         except (ImportError, FileNotFoundError) as e:
-            logger.warning("Falling back to free-flow traffic model: %s", e)
+            logger.warning(
+                "Falling back to free-flow traffic model: %s", e
+            )
         except Exception as e:
-            logger.error("Error loading traffic model: %s", e, exc_info=True)
+            logger.error(
+                "Error loading traffic model: %s", e, exc_info=True
+            )
             raise e
         return cls(G, traffic_model=traffic_model)
 
@@ -76,12 +84,16 @@ class FakeWorld(World):
         self, u: int, v: int, key: int = 0, t_seconds: float = 0.0
     ) -> bool:
         if not self.graph.has_edge(u, v, key):
-            raise KeyError(f"Edge ({u}, {v}, {key}) not found in road graph.")
+            raise KeyError(
+                f"Edge ({u}, {v}, {key}) not found in road graph."
+            )
         return super().is_blocked(u, v, key, t_seconds)
 
     def edge_time(
         self, u: int, v: int, key: int = 0, t_seconds: float = 0.0
     ) -> float:
         if not self.graph.has_edge(u, v, key):
-            raise KeyError(f"Edge ({u}, {v}, {key}) not found in road graph.")
+            raise KeyError(
+                f"Edge ({u}, {v}, {key}) not found in road graph."
+            )
         return super().edge_time(u, v, key, t_seconds)
