@@ -1,21 +1,18 @@
 """D* Lite pathfinding for weighted directed graphs.
 
-The heuristic is optional. With the default (zero) the search is not guided
-and behaves like an incremental backward Dijkstra: the baseline version. Pass
-heuristic=h, where h(a, b) is a lower bound on the cost of driving from a to
-b (for example make_heuristic(G) from heuristics.py); km then grows as the
-vehicle moves. A closed road has cost math.inf. Timings: src/search/README.md.
+Baseline version: the heuristic is zero, so the search is not guided and
+behaves like an incremental backward Dijkstra (see src/search/README.md for
+timings against A*). A closed road has cost math.inf.
 """
 
 import heapq
 import math
 
 INF = math.inf
-H_SLACK = 1e-9   # relative slack on a given heuristic, see heuristic()
 
 
 class DStarLite:
-    def __init__(self, graph, start, goal, heuristic=None):
+    def __init__(self, graph, start, goal):
         # Every node becomes a key, including dead ends that only appear as
         # a neighbour (no roads out).
         self.graph = {u: dict(edges) for u, edges in graph.items()}
@@ -27,8 +24,6 @@ class DStarLite:
         self.last_start = start
         self.goal = goal
         self.km = 0
-        self._h = heuristic
-        self._h_start = {}       # cache: u -> heuristic(start, u)
 
         if start not in self.graph or goal not in self.graph:
             raise KeyError("Start and goal must exist in graph")
@@ -54,14 +49,12 @@ class DStarLite:
         self._push(goal)
 
     @classmethod
-    def from_networkx(cls, G, start, goal, cost="free_flow_time",
-                      heuristic=None):
+    def from_networkx(cls, G, start, goal, cost="free_flow_time"):
         """Build a planner from a NetworkX (Multi)DiGraph.
 
         cost is an edge attribute name, or a function cost(u, v, data) like
         astar's cost_fn. Every node is included, also nodes with no roads
         out. Where parallel roads join the same (u, v), the cheapest is kept.
-        heuristic is passed on unchanged (see the module docstring).
         """
         if callable(cost):
             cost_fn = cost
@@ -73,36 +66,16 @@ class DStarLite:
         for u, v, data in G.edges(data=True):
             c = float(cost_fn(u, v, data))
             adj[u][v] = min(c, adj[u].get(v, INF))
-        return cls(adj, start, goal, heuristic)
+        return cls(adj, start, goal)
 
     def heuristic(self, a, b):
-        """Lower bound on the cost from a to b.
-
-        Zero unless a heuristic was given; zero works for any nonnegative
-        costs. A given heuristic must never overestimate and must obey the
-        triangle inequality h(a, c) <= h(a, b) + h(b, c).
-
-        A given heuristic is shrunk by H_SLACK: one that is exact on straight
-        roads (like R2's) can overestimate by float rounding (~1e-12 s),
-        which can stop the repair loop one node early. The shrunk value is
-        still a lower bound and still obeys the triangle inequality.
-        """
-        if self._h is None:
-            return 0
-        return self._h(a, b) * (1 - H_SLACK)
-
-    def _h_from_start(self, u):
-        # Keys need h(start, u) again and again; start only changes in
-        # move_start, which clears this cache.
-        h = self._h_start.get(u)
-        if h is None:
-            h = self._h_start[u] = self.heuristic(self.start, u)
-        return h
+        # Zero heuristic works for arbitrary nonnegative edge costs.
+        return 0
 
     def key(self, u):
         m = min(self.g[u], self.rhs[u])
         return (
-            m + self._h_from_start(u) + self.km,
+            m + self.heuristic(self.start, u) + self.km,
             m,
         )
 
@@ -175,7 +148,6 @@ class DStarLite:
         self.km += self.heuristic(self.last_start, new_start)
         self.last_start = new_start
         self.start = new_start
-        self._h_start.clear()
 
     def update_edge_cost(self, u, v, new_cost):
         """Update the cost of an existing directed road.
