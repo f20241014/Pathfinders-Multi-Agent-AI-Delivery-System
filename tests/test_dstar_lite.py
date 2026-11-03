@@ -192,3 +192,163 @@ def test_random_cost_changes_match_fresh_astar(seed):
         d.update_edge_cost(u, v, w)
         G[u][v]["free_flow_time"] = w
         assert close(d.path_cost(), astar_cost(G, s, t))
+
+
+# ---------------------------------------------------------------------------
+# e) Road closures (R2 review on PR #5)
+# ---------------------------------------------------------------------------
+def test_closure_on_best_path_reroutes(toy):
+    # Best path is A-C-B-D-E (10). Close C->B: best becomes A-B-D-E (11).
+    d = DStarLite(to_adjacency(toy), "A", "E")
+    assert d.get_path() == ["A", "C", "B", "D", "E"]
+    d.close_edge("C", "B")
+    toy["C"]["B"]["free_flow_time"] = math.inf
+    assert d.get_path() == ["A", "B", "D", "E"]
+    assert d.path_cost() == 11
+    assert close(d.path_cost(), astar_cost(toy, "A", "E"))
+
+
+def test_reopen_restores_old_route(toy):
+    d = DStarLite(to_adjacency(toy), "A", "E")
+    d.get_path()
+    d.close_edge("C", "B")
+    assert d.path_cost() == 11
+    d.reopen_edge("C", "B")                       # back to its old cost 1
+    assert d.get_path() == ["A", "C", "B", "D", "E"]
+    assert d.path_cost() == 10
+    d.close_edge("C", "B")
+    d.reopen_edge("C", "B", 3)                    # reopened slower: 2+3+5+2
+    assert d.path_cost() == 11
+
+
+def test_update_edge_cost_accepts_inf_as_closure(toy):
+    d = DStarLite(to_adjacency(toy), "A", "E")
+    d.get_path()
+    d.update_edge_cost("C", "B", math.inf)
+    assert d.get_path() == ["A", "B", "D", "E"]
+
+
+def test_closure_that_makes_goal_unreachable(toy):
+    d = DStarLite(to_adjacency(toy), "A", "E")
+    d.get_path()
+    d.close_edge("D", "E")
+    d.close_edge("C", "E")
+    assert d.get_path() == []
+    assert d.path_cost() == math.inf
+    d.reopen_edge("D", "E")
+    assert d.get_path() == ["A", "C", "B", "D", "E"]
+
+
+def test_reopen_errors(toy):
+    d = DStarLite(to_adjacency(toy), "A", "E")
+    with pytest.raises(KeyError):
+        d.reopen_edge("A", "B")                   # not closed, no cost given
+    d.close_edge("A", "B")
+    with pytest.raises(ValueError):
+        d.reopen_edge("A", "B", math.inf)
+    with pytest.raises(KeyError):
+        d.close_edge("B", "A")                    # no such road
+
+
+@pytest.mark.parametrize("seed", range(100))
+def test_random_changes_with_closures_match_fresh_astar(seed):
+    """Cost changes, closures and reopenings, checked against A* each time."""
+    rnd = random.Random(1000 + seed)
+    G = grid(rnd.randint(2, 5), rnd.randint(2, 5),
+             weights=lambda r: r.randint(1, 9))
+    s, t = rnd.sample(list(G.nodes), 2)
+    d = DStarLite(to_adjacency(G), s, t)
+    for _ in range(15):
+        u, v = rnd.choice(list(G.edges))
+        roll = rnd.random()
+        if roll < 0.3:
+            d.close_edge(u, v)
+            G[u][v]["free_flow_time"] = math.inf
+        elif roll < 0.5 and (u, v) in d.closed:
+            w = rnd.randint(1, 9)
+            d.reopen_edge(u, v, w)
+            G[u][v]["free_flow_time"] = w
+        else:
+            w = rnd.randint(1, 20)
+            d.update_edge_cost(u, v, w)
+            G[u][v]["free_flow_time"] = w
+            d.closed.pop((u, v), None)
+        assert close(d.path_cost(), astar_cost(G, s, t))
+
+
+# ---------------------------------------------------------------------------
+# f) Edge cases from the review: dead-end goal, zero-cost roads
+# ---------------------------------------------------------------------------
+def test_dead_end_goal_without_its_own_key():
+    # Node 3 has no roads out and is not a key: still a valid goal.
+    d = DStarLite({1: {2: 1.0}, 2: {3: 1.0}}, 1, 3)
+    assert d.get_path() == [1, 2, 3]
+    assert d.path_cost() == 2
+
+
+def test_zero_cost_roads_find_the_path():
+    d = DStarLite({1: {2: 0}, 2: {1: 0, 3: 1}, 3: {}}, 1, 3)
+    assert d.get_path() == [1, 2, 3]
+    assert d.path_cost() == 1
+
+
+def test_zero_cost_cycle_with_equal_values():
+    # All of 1, 2, 3 have cost-to-goal 1; the path must not loop.
+    d = DStarLite({1: {2: 0}, 2: {1: 0, 3: 0}, 3: {2: 0, 4: 1}, 4: {}}, 1, 4)
+    assert d.get_path() == [1, 2, 3, 4]
+    assert d.path_cost() == 1
+
+
+# ---------------------------------------------------------------------------
+# g) from_networkx
+# ---------------------------------------------------------------------------
+def test_from_networkx_keeps_cheapest_parallel_road_and_dead_ends():
+    G = nx.MultiDiGraph()
+    G.add_edge("A", "B", free_flow_time=5)
+    G.add_edge("A", "B", free_flow_time=2)        # parallel, cheaper
+    G.add_edge("B", "C", free_flow_time=1)        # C has no roads out
+    d = DStarLite.from_networkx(G, "A", "C")
+    assert d.graph == {"A": {"B": 2.0}, "B": {"C": 1.0}, "C": {}}
+    assert d.get_path() == ["A", "B", "C"]
+    assert d.path_cost() == 3
+
+
+def test_from_networkx_with_cost_function(toy):
+    double = DStarLite.from_networkx(
+        toy, "A", "E", cost=lambda u, v, data: 2 * data["free_flow_time"])
+    assert double.path_cost() == 20
+
+
+def test_from_networkx_matches_astar_on_real_map():
+    from src.world.graph_loader import load_road_graph
+    G = load_road_graph("secunderabad_small")
+    nodes = sorted(G.nodes)
+    rnd = random.Random(7)
+    for _ in range(3):
+        s, t = rnd.sample(nodes, 2)
+        d = DStarLite.from_networkx(G, s, t)
+        ref = astar(G, s, t).cost
+        assert close(d.path_cost(), ref)
+        path = d.get_path()
+        if len(path) > 2:                         # close a road on the route
+            u, v = path[0], path[1]
+            d.close_edge(u, v)
+
+            def blocked(a, b, data, u=u, v=v):
+                return math.inf if (a, b) == (u, v) else data["free_flow_time"]
+            assert close(d.path_cost(), astar(G, s, t, blocked).cost)
+
+
+# ---------------------------------------------------------------------------
+# h) Expansion counter
+# ---------------------------------------------------------------------------
+def test_expanded_counts_work_per_repair(toy):
+    d = DStarLite(to_adjacency(toy), "A", "E")
+    d.get_path()
+    assert d.expanded == 5                        # E, D, B, C, A
+    d.get_path()
+    assert d.expanded == 0                        # nothing changed
+    d.update_edge_cost("C", "B", 100)
+    d.get_path()
+    assert d.expanded == 4                        # C twice, A twice
+    assert d.total_expanded == 9
