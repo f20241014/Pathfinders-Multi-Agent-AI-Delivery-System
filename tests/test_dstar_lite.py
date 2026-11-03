@@ -352,3 +352,184 @@ def test_expanded_counts_work_per_repair(toy):
     d.get_path()
     assert d.expanded == 4                        # C twice, A twice
     assert d.total_expanded == 9
+
+
+# ---------------------------------------------------------------------------
+# i) Week 2: heuristic, km as the vehicle moves, 500-change property tests
+# ---------------------------------------------------------------------------
+def manhattan(a, b):
+    """Admissible on grid() graphs: every road costs at least 1."""
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+
+def random_event(rnd, G, d):
+    """Apply one random change to both G and d: cost change, close, reopen."""
+    u, v = rnd.choice(list(G.edges))
+    roll = rnd.random()
+    if roll < 0.25:
+        d.close_edge(u, v)
+        G[u][v]["free_flow_time"] = math.inf
+    elif roll < 0.45 and (u, v) in d.closed:
+        w = rnd.randint(1, 9)
+        d.reopen_edge(u, v, w)
+        G[u][v]["free_flow_time"] = w
+    else:
+        w = rnd.randint(1, 20)
+        d.update_edge_cost(u, v, w)
+        G[u][v]["free_flow_time"] = w
+        d.closed.pop((u, v), None)
+
+
+def test_heuristic_grid_all_pairs_matches_astar():
+    G = grid(4, 4, weights=lambda rnd: rnd.randint(1, 9))
+    for s in G.nodes:
+        for t in G.nodes:
+            d = DStarLite(to_adjacency(G), s, t, heuristic=manhattan)
+            assert close(d.path_cost(), astar_cost(G, s, t)), (s, t)
+
+
+def test_heuristic_expands_fewer_nodes():
+    G = grid(10, 10)
+    plain = DStarLite(to_adjacency(G), (0, 0), (0, 9))
+    guided = DStarLite(to_adjacency(G), (0, 0), (0, 9), heuristic=manhattan)
+    assert plain.path_cost() == guided.path_cost() == 9
+    assert guided.expanded < plain.expanded
+
+
+def test_km_grows_by_heuristic_of_each_move():
+    G = grid(5, 5, weights=lambda rnd: rnd.randint(1, 9))
+    goal = (4, 4)
+    d = DStarLite(to_adjacency(G), (0, 0), goal, heuristic=manhattan)
+    rnd = random.Random(3)
+    expected_km = 0
+    while d.start != goal:
+        random_event(rnd, G, d)
+        assert close(d.path_cost(), astar_cost(G, d.start, goal))
+        path = d.get_path()
+        if not path:
+            break
+        expected_km += manhattan(d.start, path[1])
+        d.move_start(path[1])
+        assert close(d.km, expected_km)        # (heuristic has 1e-9 slack)
+    assert d.km > 0
+
+
+def test_from_networkx_passes_heuristic(toy):
+    d = DStarLite.from_networkx(toy, "A", "E", heuristic=lambda a, b: 0)
+    assert d.path_cost() == 10
+
+
+def drive_with_changes(rnd, G, d, goal, steps):
+    """Random changes, the vehicle sometimes moving one road along its route.
+
+    After every change D* Lite's cost must equal a fresh A* run.
+    """
+    for _ in range(steps):
+        random_event(rnd, G, d)
+        assert close(d.path_cost(), astar_cost(G, d.start, goal))
+        path = d.get_path()
+        if len(path) > 1 and rnd.random() < 0.3:
+            d.move_start(path[1])
+
+
+@pytest.mark.parametrize("seed", range(500))
+def test_500_random_change_sequences(seed):
+    """Plan's Definition of Done: D* Lite cost equals A* over 500 sequences."""
+    rnd = random.Random(5000 + seed)
+    G = grid(rnd.randint(2, 6), rnd.randint(2, 6),
+             weights=lambda r: r.randint(1, 9))
+    s, t = rnd.sample(list(G.nodes), 2)
+    h = manhattan if seed % 2 else None
+    d = DStarLite(to_adjacency(G), s, t, heuristic=h)
+    drive_with_changes(rnd, G, d, t, steps=10)
+
+
+@pytest.mark.parametrize("use_heuristic", [False, True])
+def test_500_changes_in_one_run(use_heuristic):
+    """Week 2 property test: 500 random edge changes on one planner."""
+    rnd = random.Random(42)
+    G = grid(8, 8, weights=lambda r: r.randint(1, 9))
+    h = manhattan if use_heuristic else None
+    d = DStarLite(to_adjacency(G), (0, 0), (7, 7), heuristic=h)
+    drive_with_changes(rnd, G, d, (7, 7), steps=500)
+
+
+def test_500_changes_on_real_map_with_haversine_heuristic():
+    """Real Secunderabad (small) graph, R2's heuristic, 500 changes.
+
+    Costs only go up from free-flow time (traffic) or to inf (closure), and
+    reopened roads go back to free-flow, so the heuristic stays admissible.
+    """
+    from src.search.heuristics import make_heuristic
+    from src.world.graph_loader import load_road_graph
+    G = load_road_graph("secunderabad_small")
+    h = make_heuristic(G)
+    rnd = random.Random(11)
+    nodes = sorted(G.nodes)
+    while True:
+        s, t = rnd.sample(nodes, 2)
+        if astar(G, s, t).cost < math.inf:
+            break
+    d = DStarLite.from_networkx(G, s, t, heuristic=h)
+    base = {(u, v): data["free_flow_time"]
+            for u, v, data in G.edges(data=True)}
+    now = dict(base)
+    on_route = []
+
+    def cost_now(u, v, data):
+        return now[(u, v)]
+
+    for step in range(500):
+        if on_route and rnd.random() < 0.5:
+            u, v = rnd.choice(on_route)          # changes near the vehicle
+        else:
+            u, v = rnd.choice(list(base))
+        roll = rnd.random()
+        if roll < 0.2:
+            d.close_edge(u, v)
+            now[(u, v)] = math.inf
+        elif roll < 0.35 and (u, v) in d.closed:
+            d.reopen_edge(u, v, base[(u, v)])
+            now[(u, v)] = base[(u, v)]
+        else:
+            c = base[(u, v)] * rnd.uniform(1, 5)
+            d.update_edge_cost(u, v, c)
+            now[(u, v)] = c
+            d.closed.pop((u, v), None)
+        assert close(d.path_cost(), astar(G, d.start, t, cost_now).cost)
+        path = d.get_path()
+        on_route = list(zip(path, path[1:]))
+        if len(path) > 1 and rnd.random() < 0.2:
+            d.move_start(path[1])
+    assert d.km > 0
+
+
+def test_full_map_heuristic_replans_match_astar():
+    """Regression: R2's heuristic is exact on straight roads, so rounding
+    could stop the repair loop one node early (trips 24 and 26 of this seed
+    returned no path). Fixed by H_SLACK in DStarLite.heuristic.
+    """
+    from src.search.heuristics import make_heuristic
+    from src.world.graph_loader import load_road_graph
+    G = load_road_graph("secunderabad")
+    h = make_heuristic(G)
+    nodes = sorted(G.nodes)
+    rnd = random.Random(42)
+    trips = 0
+    while trips < 30:
+        s, t = rnd.sample(nodes, 2)
+        first = astar(G, s, t)
+        if first.cost == math.inf or len(first.path) < 6:
+            continue
+        trips += 1
+        d = DStarLite.from_networkx(G, s, t, heuristic=h)
+        path = d.get_path()
+        assert close(d.path_cost(path), first.cost)
+        i = len(path) // 2
+        u, v = path[i], path[i + 1]
+        slow = d.graph[u][v] * 5
+        d.update_edge_cost(u, v, slow)
+
+        def cost_fn(a, b, data, u=u, v=v, slow=slow):
+            return slow if (a, b) == (u, v) else data["free_flow_time"]
+        assert close(d.path_cost(), astar(G, s, t, cost_fn).cost), trips
