@@ -34,14 +34,15 @@ From the repo root: `python -m pytest` (add `-s` to see the expansion counts).
 Tests cover a hand-checked 5-node graph, a networkx cross-check (200 small and 1,000 full-graph pairs),
 route continuity, blocked edges, admissibility/consistency, and A* expanding no more nodes than Dijkstra.
 
-## D* Lite (R7), baseline version
-`src/search/dstar_lite.py` replans after road changes without starting over. This is the **baseline
-version**: its heuristic is 0, so it is not guided toward the vehicle and explores like an incremental
-backward Dijkstra. One planner covers one leg (start to one goal); a vehicle with several stops needs one
-planner per leg.
+## D* Lite (R7)
+`src/search/dstar_lite.py` replans after road changes without starting over. With the default zero
+heuristic it is the **baseline version** (not guided; explores like an incremental backward Dijkstra).
+Pass `heuristic=make_heuristic(G)` to guide it with R2's haversine bound; `km` then grows as the vehicle
+moves. One planner covers one leg (start to one goal); a vehicle with several stops needs one planner per leg.
 
 ```python
 d = DStarLite.from_networkx(G, start, goal)          # or DStarLite({u: {v: cost}}, start, goal)
+d = DStarLite.from_networkx(G, start, goal, heuristic=make_heuristic(G))   # guided
 d.get_path()                     # node list, [] if unreachable; d.path_cost() gives its cost
 d.update_edge_cost(u, v, c)      # new cost; math.inf closes the road
 d.close_edge(u, v)               # impassable until reopened
@@ -49,24 +50,36 @@ d.reopen_edge(u, v)              # back to the cost before closing (or reopen_ed
 d.move_start(node)               # the vehicle moved; call get_path() again
 d.expanded, d.total_expanded     # nodes expanded in the last repair / since construction
 ```
-- `from_networkx(G, start, goal, cost="free_flow_time")`: `cost` is an edge attribute or a function
-  `cost(u, v, data)` like `astar`'s `cost_fn`. Every node is included (also dead ends); the cheapest
-  parallel road is kept.
+- `from_networkx(G, start, goal, cost="free_flow_time", heuristic=None)`: `cost` is an edge attribute or a
+  function `cost(u, v, data)` like `astar`'s `cost_fn`. Every node is included (also dead ends); the
+  cheapest parallel road is kept.
 - Costs must be >= 0. Zero-cost roads are fine. Changes are repaired lazily, on the next `get_path()`.
+- A heuristic must never overestimate, so with `make_heuristic(G)` costs must stay >= `free_flow_time`
+  (traffic only slows roads; closures are `inf`). D* Lite shrinks a given heuristic by `H_SLACK = 1e-9`:
+  R2's bound is exact on straight roads, and float rounding (~1e-12 s) could otherwise stop the repair one
+  node early and lose the route (found on the full map; regression test in `tests/test_dstar_lite.py`).
 - Returns a plain node list, not a `SearchResult` (to be aligned with the Route/Planner interface).
 
 ### Timing on the Secunderabad graph (2,377 nodes, 6,056 edges)
-30 random trips (seed 42, at least 6 roads long), medians, `time.perf_counter()`, measured in a cloud Linux container.
-Rough figures: they will differ on other machines.
+30 random trips (seed 42, at least 6 roads long), medians, `time.perf_counter()`, measured in a cloud Linux
+container. Rough figures: they will differ on other machines. Replans: (1) one road in the middle of the
+route becomes 5x slower; (2) then the vehicle's next road closes.
 
-| Step | D* Lite | A* (R2, haversine heuristic) |
-| --- | --- | --- |
-| First plan | 5.3 ms (+ 4.3 ms `from_networkx`), 1,420 nodes expanded | 4.6 ms, 329 nodes expanded |
-| Replan after one road on the route gets 5x slower | 1.6 ms, 393 nodes expanded | 5.5 ms (from scratch) |
-| Replan after closing the vehicle's next road | 0.8 ms, 154 nodes expanded | 5.6 ms (from scratch), 401 nodes expanded |
+| Step | D* Lite, h = 0 | D* Lite, haversine h | A* from scratch (R2) |
+| --- | --- | --- | --- |
+| First plan | 5.3 ms, 1,420 expanded | 5.2 ms, 471 expanded | 4.6 ms, 329 expanded |
+| Replan after a slower road | 1.6 ms, 393 expanded | 1.6 ms, 218 expanded | 5.5 ms |
+| Replan after a closure | 0.8 ms, 154 expanded | 1.5 ms, 141 expanded | 5.6 ms, 401 expanded |
 
-- The first plan is slower than A* because the zero heuristic expands about 4x more nodes.
+`from_networkx` adds about 4.5 ms once per planner.
 - Replans are 3-7x faster than rerunning A*, because only nodes whose values changed are reprocessed.
-- Before the predecessor map (PR #5 review) the same trips took 179 ms for the first plan and 46 ms per replan:
-  every update scanned all 2,377 nodes to find the roads into a node.
-- Next step (Week 3): R2's haversine heuristic with `km`, and the full benchmark against the number of changed edges.
+- The heuristic cuts expansions about 3x on the first plan, but each haversine call costs time, so the
+  run time is about the same. `h(start, u)` is cached until the vehicle moves.
+- Before the predecessor map (PR #5 review) the same trips took 179 ms for the first plan and 46 ms per
+  replan: every update scanned all 2,377 nodes to find the roads into a node.
+- Next (Week 3): benchmark against the number of changed edges, and multi-stop routes (one planner per leg).
+
+### Tests
+`tests/test_dstar_lite.py` checks every D* Lite cost against `astar.py`: hand-checked toy graph, grids,
+closures and reopening, moving start (km), dead ends, zero-cost roads, 500 random change sequences, 500
+changes in one run (grid and real map, with and without heuristic), and the full-map rounding regression.
