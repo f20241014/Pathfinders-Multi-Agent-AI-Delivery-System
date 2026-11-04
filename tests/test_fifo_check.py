@@ -7,7 +7,8 @@ import math
 import networkx as nx
 import pytest
 
-from src.search.fifo_check import check_edge, check_fifo, sample_edges, write_doc
+from src.search.fifo_check import (check_edge, check_fifo, conclusion, sample_edges,
+                                   write_doc)
 from src.sim.world import FakeWorld
 
 TIMES = range(0, 100)          # one-second grid 0..99
@@ -74,3 +75,14 @@ def test_doc_warns_when_free_flow_only(tmp_path):
     write_doc({1: summary}, has_traffic=False, n_edges=1, seed=0, prediction="", path=path)
     first = path.read_text(encoding="utf-8").splitlines()[0]
     assert "free-flow only (no traffic data), result is trivial and NOT valid evidence" in first
+
+
+def test_conclusion_uses_the_numbers():
+    def summary(violating, times, worst):
+        return {"edges_checked": 500, "edges_violating": violating, "violating_times": times,
+                "grid_times": 1_000_000, "worst_s": worst}
+    text = " ".join(conclusion({5: summary(74, 500, 57.7), 1: summary(303, 900, 61.71)}, 500))
+    assert ("14.8% of edges violate FIFO on a 5 s grid and 60.6% on a 1 s grid, "
+            "at fewer than 0.1% of the grid times; the worst case is 61.7 s.") in text
+    no_violation = " ".join(conclusion({1: summary(0, 0, 0.0)}, 500))
+    assert "No FIFO violation was found" in no_violation

@@ -31,3 +31,7 @@ With `T(t)` = travel time of an edge entered at time `t`, FIFO means `t1 < t2  =
 
 The simulator fixes an edge's traversal time when the vehicle enters it (`world.edge_time(u, v, t_entry)`), exactly the cost the search uses, so the travel time the search predicts for a route is the time the simulator will produce (if nothing changes on the way). Where FIFO is violated, a vehicle could sometimes arrive earlier by waiting before entering an edge, or by reaching a node later. The searches do not consider waiting, so on those edges the route is still valid and its time still exact, but it may not be the fastest possible.
 
+## Conclusion
+
+FIFO does not hold exactly on this map with R6's traffic model. The multipliers change in 5-minute steps, so when an edge's multiplier drops at a step boundary, a car entering just after leaves before a car that entered just before. On the 500-edge sample, 14.8% of edges violate FIFO on a 5 s grid and 60.6% on a 1 s grid, at fewer than 0.1% of the grid times; the worst case is 61.7 s. The counts depend on the grid step; the size of the violations is the meaningful number. Consequences: routes from time-dependent Dijkstra and A* are valid and their times are exact for the simulator (same time-fixed-at-entry rule), but they are guaranteed fastest only under FIFO. Near step boundaries a route that waits could be faster, and the searches do not consider waiting. We accept this as a documented limitation. A possible fix outside R2's scope: interpolate the multipliers between steps in traffic_model.py (R6).
+

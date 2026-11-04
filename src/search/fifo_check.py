@@ -84,6 +84,44 @@ def percent(part, whole):
     return f"{part} / {whole} ({100 * part / whole:.2f}%)" if whole else f"{part} / 0"
 
 
+def conclusion(summaries, n_edges):
+    """The "## Conclusion" section, with the numbers taken from the summaries."""
+    steps = list(summaries)                    # coarsest grid step first
+
+    def share(st):                             # % of checked edges with a violation
+        s = summaries[st]
+        return 100 * s["edges_violating"] / s["edges_checked"] if s["edges_checked"] else 0.0
+
+    if summaries[steps[-1]]["edges_violating"] == 0:
+        return ["## Conclusion", "",
+                f"No FIFO violation was found on the {n_edges}-edge sample, "
+                f"even on a {steps[-1]} s grid.", ""]
+    edges_text = " and ".join(
+        [f"{share(steps[0]):.1f}% of edges violate FIFO on a {steps[0]} s grid"]
+        + [f"{share(st):.1f}% on a {st} s grid" for st in steps[1:]])
+    time_share = max(100 * s["violating_times"] / s["grid_times"]
+                     for s in summaries.values() if s["grid_times"])
+    time_text = "fewer than 0.1%" if time_share < 0.1 else f"up to {time_share:.1f}%"
+    worst = max(s["worst_s"] for s in summaries.values())
+    return [
+        "## Conclusion",
+        "",
+        "FIFO does not hold exactly on this map with R6's traffic model. The multipliers "
+        "change in 5-minute steps, so when an edge's multiplier drops at a step boundary, a "
+        "car entering just after leaves before a car that entered just before. "
+        f"On the {n_edges}-edge sample, {edges_text}, at {time_text} of the grid times; "
+        f"the worst case is {worst:.1f} s. The counts depend on the grid step; the size of "
+        "the violations is the meaningful number. Consequences: routes from "
+        "time-dependent Dijkstra and A* are valid and their times are exact for the "
+        "simulator (same time-fixed-at-entry rule), but they are guaranteed fastest only "
+        "under FIFO. Near step boundaries a route that waits could be faster, and the "
+        "searches do not consider waiting. We accept this as a documented limitation. "
+        "A possible fix outside R2's scope: interpolate the multipliers between steps in "
+        "traffic_model.py (R6).",
+        "",
+    ]
+
+
 def write_doc(summaries, has_traffic, n_edges, seed, prediction, path=DOC_PATH,
               edge_time_fn=None):
     """Write the results ({grid step: summary}, coarsest first) and the FIFO assumption."""
@@ -152,6 +190,7 @@ def write_doc(summaries, has_traffic, n_edges, seed, prediction, path=DOC_PATH,
         "is still valid and its time still exact, but it may not be the fastest possible.",
         "",
     ]
+    lines += conclusion(summaries, n_edges)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
