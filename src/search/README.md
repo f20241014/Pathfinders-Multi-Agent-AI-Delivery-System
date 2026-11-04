@@ -5,6 +5,9 @@
 - `dijkstra.py`: Dijkstra from scratch with `heapq`, plus the shared `SearchResult` (path, cost, expanded).
 - `astar.py`: A* from scratch, the same as Dijkstra but ordered by `f = g + h`.
 - `dstar_lite.py` (R7): `DStarLite` incremental search (Koenig & Likhachev 2002). See the D* Lite section below.
+- `multi_stop.py` (R7): `MultiStopPlanner`, one D* Lite per leg for a vehicle with several stops.
+- `sim_replanner.py` (R7): D* Lite inside R1's simulator (`SimReplanner`, `reroute`).
+- `benchmark_replan.py` (R7): D* Lite vs A* replanning benchmark, figure F3.
 - `../world/graph_loader.py`: `load_road_graph(name)` prepares a graph for search.
 - `../viz/plot_route.py`: draws one A* route to `docs/route_example.png`.
 
@@ -77,9 +80,83 @@ route becomes 5x slower; (2) then the vehicle's next road closes.
   run time is about the same. `h(start, u)` is cached until the vehicle moves.
 - Before the predecessor map (PR #5 review) the same trips took 179 ms for the first plan and 46 ms per
   replan: every update scanned all 2,377 nodes to find the roads into a node.
-- Next (Week 3): benchmark against the number of changed edges, and multi-stop routes (one planner per leg).
+- Week 3 benchmark against the number of changed roads: see F3 below.
 
 ### Tests
-`tests/test_dstar_lite.py` checks every D* Lite cost against `astar.py`: hand-checked toy graph, grids,
+`tests/test_multi_stop.py`, `tests/test_sim_replanner.py` (inside R1's sim, vs A*) and
+`tests/test_benchmark_replan.py` cover Week 3. `tests/test_dstar_lite.py` checks every D* Lite cost against `astar.py`: hand-checked toy graph, grids,
 closures and reopening, moving start (km), dead ends, zero-cost roads, 500 random change sequences, 500
 changes in one run (grid and real map, with and without heuristic), and the full-map rounding regression.
+
+### Heuristic debug check
+With a heuristic, `update_edge_cost` warns (`HeuristicWarning`) when a road becomes cheaper than the
+heuristic allows, because routes may then not be optimal. With `make_heuristic(G)` that means below
+free-flow time. R6's multipliers are never below 1 and spikes are 1.2x or more, so it should never fire.
+
+## Multi-stop routes (R7, Week 3)
+D* Lite plans to one goal, so `MultiStopPlanner` keeps one D* Lite per leg (vehicle -> stop 1 -> stop 2 ...).
+Road changes go to every remaining leg; when the vehicle reaches a stop, that leg is dropped.
+
+```python
+p = MultiStopPlanner.from_networkx(G, start, [s1, s2, s3], heuristic=make_heuristic(G))
+p.path(); p.path_cost()          # whole route through all stops; [] / inf if a stop is unreachable
+p.close_edge(u, v)               # also update_edge_cost / reopen_edge, sent to every leg
+p.move_start(node)               # vehicle moved; legs advance when a stop is reached
+p.unreachable_stops()            # stops a closure has cut off
+```
+
+## D* Lite in R1's simulator (R7, Week 3)
+`src/search/sim_replanner.py` connects D* Lite to `DeliverySimEnvironment` **without changing R1's code**:
+
+```python
+from src.search.sim_replanner import SimReplanner
+replanner = SimReplanner(env, heuristic=make_heuristic(world.graph()))
+replanner.register(vehicle, stops=[o.node for o in orders])   # sets vehicle.remaining_route
+env.add_vehicle(vehicle, orders)
+env.run()
+```
+- Costs follow decision D10: predicted travel time x live spike multiplier, `inf` while closed.
+- It listens to `env.subscribe`. On every closure or spike, each vehicle's planner is updated and its
+  `remaining_route` replaced. A vehicle on a road cannot turn back, so it replans from the end of that road.
+- Each replan is logged as a new `replan` event: `{"trigger", "edge", "from_node", "route_found",
+  "unreachable_stops", "expanded", "cpu_seconds"}` (CPU time per D9). To add to `docs/log_schema.md` with R1/R8.
+- Closures and spikes have no "ended" event, so roads that had one are re-checked at every later event.
+
+**Suggested change for R1** (replaces the "wait 60 s" `TODO(R7)` in `src/sim/environment.py`, for a
+closure that is already there when the vehicle reaches it):
+
+```python
+from src.search.sim_replanner import reroute, stops_from_route
+...
+if self.world.is_blocked(u, v, key, self.get_current_time()):
+    stops = stops_from_route([v] + vehicle.remaining_route, {o.node for o in pending})
+    new_route = reroute(self.world, vehicle, stops, self.get_current_time())
+    if new_route:                                  # None: no way round now, so wait as before
+        vehicle.remaining_route = new_route
+        continue
+```
+
+## F3: D* Lite vs A* replanning by number of changed roads (R7, Week 3)
+`python -m src.search.benchmark_replan` writes `reports/dstar_benchmark.csv` (one row per trial) and
+`reports/figures/F3_dstar_speedup.png`. 20 trips (seed 7, at least 10 roads), k in {1 ... 500} changed
+roads (D11 mix: 3/7 closures, else spikes x1.2-3), R2's heuristic in both planners, `time.process_time()`.
+Every D* Lite answer is checked against A* during the run.
+
+| Roads changed | Anywhere on the map | On route, near vehicle | On route, near goal |
+| --- | --- | --- | --- |
+| 1 | 58x faster (0.08 vs 4.1 ms) | 5.5x | 1.0x |
+| 10 | 23x | 0.8x | 1.1x |
+| 50 | 3.5x | 0.9x | 1.0x |
+| 100 | 1.4x | 0.8x | 0.9x |
+| 500 | 0.5x (slower) | 0.5x | 0.5x |
+
+Median speed-up = A* CPU / D* Lite CPU. What it shows, honestly:
+- **Changes away from the route are almost free** for D* Lite (most do not touch its search), so a few
+  random disruptions, as in D11, give 20-60x speed-ups.
+- **Changes on the route near the goal give no speed-up.** D* Lite searches backwards from the goal, so a
+  change there invalidates most of its g-values and it redoes about a full search.
+- **Changes on the route near the vehicle** help while few (5x for 1 road) but not beyond about 5 roads,
+  because the new route is far from the old one.
+- **Hundreds of changes at once:** D* Lite is about 2x slower than A*, because repairing costs more per
+  node than searching fresh. Above that a fresh plan (new `DStarLite`) is the better choice.
+- Rough, single-machine figures; rerun with `--trips` and other seeds for the report.
