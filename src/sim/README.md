@@ -33,7 +33,7 @@ Order time windows, release times, closure/spike start and expiry all use this c
 ## Travel time
 
 ```
-edge_time(u, v, key, t) = inf                                   if the road is closed at t
+edge_time(u, v, t, key=None) = inf                              if the road is closed at t
                         = free_flow x traffic_mult x spike_mult  otherwise
 ```
 

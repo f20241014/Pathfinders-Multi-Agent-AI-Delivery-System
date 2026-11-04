@@ -151,6 +151,12 @@ def test_full_graph_matches_networkx(full):
     check_matches_networkx(full[1])
 
 
+def test_full_graph_astar_cost_equals_dijkstra(full):
+    # Plan (Definition of Done): A* cost == Dijkstra cost on 1,000 random pairs, directly.
+    for row in full[1]:
+        assert close(row["astar"].cost, row["dijkstra"].cost), row["pair"]
+
+
 # ---------------------------------------------------------------------------
 # d) Routes are continuous and their cost adds up
 # ---------------------------------------------------------------------------
@@ -237,8 +243,10 @@ def check_expansions(rows, label):
     print(f"\n{label}: average expanded  Dijkstra {np.mean(d):.1f}  A* {np.mean(a):.1f}")
     print(f"  ratio of averages {np.mean(d) / np.mean(a):.2f}x, "
           f"average per-pair ratio {np.mean(ratios):.2f}x")
-    print(f"  best pair  {rows[best]['pair']}: Dijkstra {d[best]}, A* {a[best]} ({ratios[best]:.1f}x)")
-    print(f"  worst pair {rows[worst]['pair']}: Dijkstra {d[worst]}, A* {a[worst]} ({ratios[worst]:.2f}x)")
+    print(f"  best pair  {rows[best]['pair']}: Dijkstra {d[best]}, A* {a[best]} "
+          f"({ratios[best]:.1f}x)")
+    print(f"  worst pair {rows[worst]['pair']}: Dijkstra {d[worst]}, A* {a[worst]} "
+          f"({ratios[worst]:.2f}x)")
     violations = [(row["pair"], row["astar"].expanded, row["dijkstra"].expanded)
                   for row in rows if row["astar"].expanded > row["dijkstra"].expanded]
     assert not violations, f"A* expanded more than Dijkstra on: {violations}"
