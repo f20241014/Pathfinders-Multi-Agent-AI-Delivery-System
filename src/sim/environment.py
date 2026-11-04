@@ -139,11 +139,11 @@ class DeliverySimEnvironment:
             key = self.world.edge_key(u, v)
 
             # TODO(R7): re-route around the closure instead of waiting.
-            while self.world.is_blocked(u, v, key, self.get_current_time()):
+            while self.world.is_blocked(u, v, self.get_current_time(), key):
                 self.log_event("blocked_wait", {"edge": [u, v, key]}, agent_id=vehicle.id)
                 yield self.env.timeout(BLOCKED_POLL_S)
 
-            travel_s = self.world.edge_time(u, v, key, self.get_current_time())
+            travel_s = self.world.edge_time(u, v, self.get_current_time(), key)
             vehicle.current_edge = (u, v, key)
             self.log_event(
                 "edge_enter",

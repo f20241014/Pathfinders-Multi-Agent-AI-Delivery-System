@@ -63,7 +63,7 @@ def test_edge_times_equal_free_flow_and_vary(G):
     world = World(G)
     times = []
     for u, v, k, data in G.edges(keys=True, data=True):
-        t = world.edge_time(u, v, k, START)
+        t = world.edge_time(u, v, START, key=k)
         assert t == pytest.approx(data["free_flow_time"])
         times.append(round(t, 1))
     assert len(set(times)) > 100
@@ -75,7 +75,7 @@ def test_roads_with_nonzero_key(G):
     assert len(odd) == 5
     for u, v, k in odd:
         assert world.edge_key(u, v) == k
-        assert math.isfinite(world.edge_time(u, v, k, START))
+        assert math.isfinite(world.edge_time(u, v, START, key=k))
 
 
 def test_astar_avoids_closed_road(G, config):
