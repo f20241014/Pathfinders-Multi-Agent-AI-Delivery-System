@@ -60,7 +60,8 @@ def test_real_graph_static_checks(results):
 
 
 def test_real_graph_time_dependent_checks(results):
-    assert results["has_traffic"], "traffic model must be active for this test"
+    if not results["has_traffic"]:
+        pytest.skip("needs data/raw/metr-la.h5 and torch (not available in CI)")
     assert results["min_ratio"] >= 1.0
     assert results["td"]["checked"] > 0 and results["td"]["violations"] == 0
 
