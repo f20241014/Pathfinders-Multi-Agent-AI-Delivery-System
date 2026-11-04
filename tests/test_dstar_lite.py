@@ -533,3 +533,27 @@ def test_full_map_heuristic_replans_match_astar():
         def cost_fn(a, b, data, u=u, v=v, slow=slow):
             return slow if (a, b) == (u, v) else data["free_flow_time"]
         assert close(d.path_cost(), astar(G, s, t, cost_fn).cost), trips
+
+
+# ---------------------------------------------------------------------------
+# j) Week 3: debug check when a cost drops below the heuristic (R2 review)
+# ---------------------------------------------------------------------------
+def test_warns_when_cost_below_heuristic():
+    from src.search.dstar_lite import HeuristicWarning
+    G = grid(3, 3)                                   # unit costs, Manhattan ok
+    d = DStarLite(to_adjacency(G), (0, 0), (2, 2), heuristic=manhattan)
+    with pytest.warns(HeuristicWarning):
+        d.update_edge_cost((0, 0), (0, 1), 0.5)      # h says at least 1
+
+
+def test_no_warning_for_valid_changes_or_without_heuristic():
+    import warnings
+    G = grid(3, 3)
+    guided = DStarLite(to_adjacency(G), (0, 0), (2, 2), heuristic=manhattan)
+    plain = DStarLite(to_adjacency(G), (0, 0), (2, 2))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        guided.update_edge_cost((0, 0), (0, 1), 3)   # slower: fine
+        guided.close_edge((0, 1), (0, 2))            # inf: fine
+        guided.update_edge_cost((1, 1), (1, 2), 1)   # exactly the bound: fine
+        plain.update_edge_cost((0, 0), (0, 1), 0)    # no heuristic: no check
