@@ -71,21 +71,21 @@ def test_closure_and_spike_with_future_start(toy_graph):
     world = FakeWorld(toy_graph)
     world.add_disruption(1, 2, 0, expiry_t_seconds=22100, start_t_seconds=22000)
     world.add_spike(2, 3, 0, 2.0, expiry_t_seconds=22100, start_t_seconds=22000)
-    assert not world.is_blocked(1, 2, 0, 21999)
-    assert world.is_blocked(1, 2, 0, 22000)
-    assert not world.is_blocked(1, 2, 0, 22100)
-    assert world.spike_multiplier(2, 3, 0, 21999) == 1.0
-    assert world.spike_multiplier(2, 3, 0, 22000) == 2.0
-    assert world.spike_multiplier(2, 3, 0, 22100) == 1.0
+    assert not world.is_blocked(1, 2, 21999, key=0)
+    assert world.is_blocked(1, 2, 22000, key=0)
+    assert not world.is_blocked(1, 2, 22100, key=0)
+    assert world.spike_multiplier(2, 3, 21999, key=0) == 1.0
+    assert world.spike_multiplier(2, 3, 22000, key=0) == 2.0
+    assert world.spike_multiplier(2, 3, 22100, key=0) == 1.0
 
 
 def test_spike_slows_road_then_expires(toy_graph):
     world = FakeWorld(toy_graph)
     world.add_spike(1, 2, 0, 2.0, expiry_t_seconds=22000)
     world.add_spike(1, 2, 0, 1.5, expiry_t_seconds=21700)
-    assert world.edge_time(1, 2, 0, START) == pytest.approx(30.0)   # 10 x 2 x 1.5
-    assert world.edge_time(1, 2, 0, 21800) == pytest.approx(20.0)
-    assert world.edge_time(1, 2, 0, 22000) == pytest.approx(10.0)
+    assert world.edge_time(1, 2, START, key=0) == pytest.approx(30.0)   # 10 x 2 x 1.5
+    assert world.edge_time(1, 2, 21800, key=0) == pytest.approx(20.0)
+    assert world.edge_time(1, 2, 22000, key=0) == pytest.approx(10.0)
 
 
 @pytest.mark.parametrize("cls", [World, FakeWorld])
@@ -93,11 +93,11 @@ def test_missing_edge_raises_key_error(toy_graph, cls):
     world = cls(toy_graph)
     for call in (
         lambda: world.free_flow_time(1, 99, 0),
-        lambda: world.is_blocked(1, 99, 0, START),
-        lambda: world.edge_time(1, 99, 0, START),
-        lambda: world.spike_multiplier(1, 99, 0, START),
+        lambda: world.is_blocked(1, 99, START, key=0),
+        lambda: world.edge_time(1, 99, START, key=0),
+        lambda: world.spike_multiplier(1, 99, START, key=0),
         lambda: world.edge_key(1, 99),
-        lambda: world.edge_time(1, 2, 5, START),       # wrong key
+        lambda: world.edge_time(1, 2, START, key=5),       # wrong key
     ):
         with pytest.raises(KeyError):
             call()
@@ -154,8 +154,8 @@ class StubPredictor:
 
 def test_traffic_model_and_predictor_wiring(toy_graph):
     world = World(toy_graph, traffic_model=StubTraffic(), predictor=StubPredictor())
-    assert world.edge_time(1, 2, 0, START) == pytest.approx(20.0)   # model x2
-    assert world.edge_time(2, 3, 0, START) == pytest.approx(15.0)   # KeyError -> 1.0
+    assert world.edge_time(1, 2, START, key=0) == pytest.approx(20.0)   # model x2
+    assert world.edge_time(2, 3, START, key=0) == pytest.approx(15.0)   # KeyError -> 1.0
     assert world.predicted_time(1, 2, START) == pytest.approx(30.0)
     assert world.predicted_time(2, 3, START) == pytest.approx(15.0)  # unknown edge
     assert FakeWorld(toy_graph).predicted_time(1, 2, START) == pytest.approx(10.0)
@@ -332,10 +332,10 @@ def test_disruptions_change_the_world(toy_graph):
         assert 600 <= p["duration"] <= 1800 and p["expiry"] == pytest.approx(e.t + p["duration"])
         if p["type"] == "closure":
             assert p["magnitude"] is None
-            assert world.is_blocked(u, v, k, e.t)
+            assert world.is_blocked(u, v, e.t, key=k)
         else:
             assert 1.2 <= p["magnitude"] <= 3.0
-            assert world.spike_multiplier(u, v, k, e.t) >= p["magnitude"]
+            assert world.spike_multiplier(u, v, e.t, key=k) >= p["magnitude"]
     orders = [e for e in received if e.event_type == "new_order"]
     assert [e.payload["order_id"] for e in orders] == [f"dyn_{i + 1}" for i in range(len(orders))]
     assert all(e.payload["release_time"] == e.t for e in orders)
