@@ -38,11 +38,11 @@ def world_cost(world, u, v, t_seconds):
     best = INF
     predicted = None
     for key in world.graph()[u][v]:
-        if world.is_blocked(u, v, key, t_seconds):
+        if world.is_blocked(u, v, t_seconds, key):
             continue
         if predicted is None:
             predicted = world.predicted_time(u, v, t_seconds)
-        best = min(best, predicted * world.spike_multiplier(u, v, key, t_seconds))
+        best = min(best, predicted * world.spike_multiplier(u, v, t_seconds, key))
     return best
 
 

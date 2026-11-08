@@ -88,6 +88,11 @@ route becomes 5x slower; (2) then the vehicle's next road closes.
 closures and reopening, moving start (km), dead ends, zero-cost roads, 500 random change sequences, 500
 changes in one run (grid and real map, with and without heuristic), and the full-map rounding regression.
 
+### Heuristic debug check
+With a heuristic, `update_edge_cost` warns (`HeuristicWarning`) when a road becomes cheaper than the
+heuristic allows, because routes may then not be optimal. With `make_heuristic(G)` that means below
+free-flow time. R6's multipliers are never below 1 and spikes are 1.2x or more, so it should never fire.
+
 ## Week 2 (R2)
 
 All times are absolute seconds from midnight; the sim window is 06:00-10:00 (21600-36000 s).
@@ -165,11 +170,6 @@ Repeat calls are cache hits (`tm.hits`, `tm.misses`, `tm.expanded`); `clear_cach
 the simulator and metrics only. Planning with it would give agents knowledge of the future and break D10 (all
 conditions see the same information). No predicted-cost factory exists yet; `docs/travel_matrix.md` has a 6-line
 wrapper, checked against WorldTravel.
-### Heuristic debug check
-With a heuristic, `update_edge_cost` warns (`HeuristicWarning`) when a road becomes cheaper than the
-heuristic allows, because routes may then not be optimal. With `make_heuristic(G)` that means below
-free-flow time. R6's multipliers are never below 1 and spikes are 1.2x or more, so it should never fire.
-
 ## Multi-stop routes (R7, Week 3)
 D* Lite plans to one goal, so `MultiStopPlanner` keeps one D* Lite per leg (vehicle -> stop 1 -> stop 2 ...).
 Road changes go to every remaining leg; when the vehicle reaches a stop, that leg is dropped.
@@ -205,7 +205,7 @@ closure that is already there when the vehicle reaches it):
 ```python
 from src.search.sim_replanner import reroute, stops_from_route
 ...
-if self.world.is_blocked(u, v, key, self.get_current_time()):
+if self.world.is_blocked(u, v, self.get_current_time(), key):
     stops = stops_from_route([v] + vehicle.remaining_route, {o.node for o in pending})
     new_route = reroute(self.world, vehicle, stops, self.get_current_time())
     if new_route:                                  # None: no way round now, so wait as before
