@@ -21,7 +21,7 @@ one winner if any: m + bids + (1 if awarded else 0). This is allocation traffic,
 not R5 negotiation traffic; no award is sent for an unassignable order. Tie-break
 by vehicle ID. These counting and priority conventions are proposals for team review.
 
-## Primary references checked during implementation
+## References (Google guides checked; Smith DOI needs manual verification)
 
 - https://developers.google.com/optimization/routing/cvrp
 - https://developers.google.com/optimization/routing/vrptw
@@ -78,10 +78,23 @@ interfaces. Modes independent/full use the same CNP; full is an allocation-only
 smoke mode, not a substitute for the R5/R7 complete experiment. The opt-in
 AllocationSimulation subclass supports event replanning, committed edge/service
 protection, explicit horizon failures, road restrictions and accumulated load.
-Final allocation_summary is authoritative; the inherited sim_complete row is
-written before horizon reconciliation. Event feed and physical traversal remain
+Final sim_complete and allocation_summary rows are written after horizon
+reconciliation. Event feed and physical traversal remain
 R1-owned. Tests inject a closure during travel and check exact-once terminals.
 
 An independent exhaustive checker enumerates tiny assignments/drop choices/stop
 permutations and tests the solver objective at three capacities. This establishes
 small-case correctness, not near-optimality for the full Hyderabad scenario.
+
+## Week 6: hardening and measured budget study
+
+Run `python -m src.allocation.study` to regenerate reports/r4 raw CSV, config,
+hash/environment manifest and quality-vs-CPU table (18 pilot runs). See
+docs/r4/HANDOFF_AND_VIVA.md for interfaces, chosen defaults and viva outlines.
+Test command: `python -m pytest tests/test_allocation*.py -q` on shells that
+expand globs, or `python -m pytest tests -k allocation --ignore=tests/test_prediction.py`
+with the full repo dependencies installed. The dedicated CI job installs only
+requirements-r4.txt and covers every weekly allocation test.
+
+Real-map smoke: `python -m src.allocation.map_smoke` (existing map dependencies required).
+Full validation and PowerShell commands: docs/r4/VALIDATION.md.

@@ -13,3 +13,5 @@ refer to the execution plan, not historical evidence of participation.
 - W4: shared forecast/incident graph adapter, road profiles, cached paths, mode/event controller, mid-edge/active-service snapshots and explicit failure logs; integration boundary tested.
 
 - W5: opt-in executable SimPy allocation harness; dynamic arrivals/closure during travel; exact-once outcomes and baseline-vs-exhaustive quality tests.
+
+- W6: failure/partial-capacity hardening, explicit defaults, measured pilot time-budget study with raw records, handoff and viva guide. Human review/teach-back and full-system R5/R7 integration are pending.

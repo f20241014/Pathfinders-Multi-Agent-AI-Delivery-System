@@ -1,0 +1,17 @@
+{
+  "graph_nodes": 2377,
+  "graph_edges": 6056,
+  "vehicles": 10,
+  "orders": 100,
+  "demand": "synthetic unit demand",
+  "seed": 404,
+  "traffic": "free flow only; no predictor or held-out traffic data",
+  "cnp_assigned": 100,
+  "cnp_travel_s": 5020.680245213694,
+  "cnp_messages": 2023,
+  "central_failed": 0,
+  "central_travel_s": 3899.4587688940783,
+  "central_cpu_s": 2.171875,
+  "central_objective": 3949,
+  "central_messages": 20
+}
