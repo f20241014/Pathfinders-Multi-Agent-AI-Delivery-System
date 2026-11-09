@@ -69,12 +69,24 @@ def main() -> None:
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     parser = argparse.ArgumentParser(description="Run headless delivery simulation.")
     parser.add_argument("--config", default="configs/sim_default.yaml", help="Path to config")
+    parser.add_argument(
+        "--profile", type=int, nargs="?", const=20, default=0, metavar="N",
+        help="Profile the run and print the N slowest functions (default 20)",
+    )
     args = parser.parse_args()
 
     with open(args.config, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    log_path = run_from_config(config)
+    if args.profile:
+        import cProfile
+        import pstats
+
+        profiler = cProfile.Profile()
+        log_path = profiler.runcall(run_from_config, config)
+        pstats.Stats(profiler).sort_stats("cumulative").print_stats(args.profile)
+    else:
+        log_path = run_from_config(config)
     print(f"Simulation completed. Log saved to: {log_path}")
 
 

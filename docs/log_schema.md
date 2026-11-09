@@ -37,6 +37,7 @@ Edges are `[u, v, key]` (OSM node ids, key of the road actually used).
 | `capacity_blocked` | vehicle | `{"order_id", "demand", "load", "capacity"}`; order is deferred |
 | `order_failed` | vehicle | `{"order_id", "node", "reason"}` |
 | `disruption` | env | `{"type": "traffic_spike" \| "closure", "edge": [u, v, key], "magnitude": float \| null, "duration": float s, "expiry": float t}`; `magnitude` is the spike multiplier, `null` for a closure |
+| `closure_skipped` | env | `{"attempts": int}`; a closure was due but every road drawn would cut a vehicle off from a pending destination (closure guard, D11), so no road was closed. Not passed to `subscribe` listeners. |
 | `new_order` | env | `{"order_id": "dyn_N", "release_time": float t}` |
 | `sim_complete` | env | `{"delivered": int, "failed": int}` |
 

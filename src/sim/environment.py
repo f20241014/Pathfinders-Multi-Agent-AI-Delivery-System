@@ -3,12 +3,12 @@
 All times are absolute seconds from midnight: t = start_time_s + env.now.
 """
 import os
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import simpy
 
-from src.sim.events import EventGenerator
+from src.sim.events import DISRUPTION_DEFAULTS, EventGenerator, check_disruption_params
 from src.sim.logger import SimulationLogger
 from src.sim.models import Event, Order, Vehicle
 
@@ -28,6 +28,7 @@ class DeliverySimEnvironment:
         self.seed = int(config.get("seed", 42))
         self.disruption_rate = float(config.get("disruption_rate_per_hour", 0.0))
         self.start_time_s = float(config.get("start_time_s", DEFAULT_START_TIME_S))
+        self.disruption_params = self._disruption_params(config.get("disruptions"))
         self.rng = np.random.default_rng(self.seed)
         self.log_path = config.get("log_path") or os.path.join(
             "logs", f"{self.run_id}.jsonl"
@@ -39,8 +40,46 @@ class DeliverySimEnvironment:
         self.vehicles: Dict[str, Vehicle] = {}
         self.orders: List[Order] = []
         self.subscribers: List[Callable[[Event], None]] = []
+        # vehicle id -> its undelivered orders (same list the vehicle process edits)
+        self._pending: Dict[str, List[Order]] = {}
         self.n_delivered = 0
         self.n_failed = 0
+
+    @staticmethod
+    def _disruption_params(block: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """D11 settings from the optional `disruptions:` config block."""
+        block = dict(block or {})
+        unknown = set(block) - set(DISRUPTION_DEFAULTS)
+        if unknown:   # a typo must not silently fall back to the default
+            raise ValueError(
+                f"unknown keys in disruptions config: {sorted(unknown)}; "
+                f"allowed: {sorted(DISRUPTION_DEFAULTS)}"
+            )
+        params = {**DISRUPTION_DEFAULTS, **block}
+        params["max_closure_attempts"] = int(params["max_closure_attempts"])
+        for name in ("min_duration_s", "max_duration_s", "min_spike", "max_spike"):
+            params[name] = float(params[name])
+        check_disruption_params(**params)     # fail at setup, not mid-run
+        return params
+
+    def pending_targets(self) -> List[Tuple[Any, List[Any]]]:
+        """(source, pending order nodes) per vehicle, for the closure guard.
+
+        Source is the node the vehicle is at, or the end of the road it is on
+        (traversal is fixed at edge entry, so it will get there). Subclasses
+        that drive vehicles differently (e.g. R4's AllocationSimulation)
+        should override this.
+        """
+        targets = []
+        for vid, pending in self._pending.items():
+            if not pending:
+                continue
+            vehicle = self.vehicles[vid]
+            source = (
+                vehicle.current_edge[1] if vehicle.current_edge else vehicle.current_node
+            )
+            targets.append((source, [o.node for o in pending]))
+        return targets
 
     # ------------------------------------------------------------------
     # Clock, logging, events
@@ -126,6 +165,7 @@ class DeliverySimEnvironment:
 
     def _vehicle_process(self, vehicle: Vehicle, assigned_orders: List[Order]):
         pending = list(assigned_orders)
+        self._pending[vehicle.id] = pending
         deferred: Set[str] = set()
 
         # Orders at the starting node are served before driving.
@@ -165,6 +205,7 @@ class DeliverySimEnvironment:
                 "capacity_exceeded_unservable" if order.id in deferred else "not_on_route"
             )
             self._fail(vehicle, order, reason)
+        pending.clear()                   # nothing left to protect from closures
 
     # ------------------------------------------------------------------
     # Run
@@ -182,6 +223,9 @@ class DeliverySimEnvironment:
             gen = EventGenerator(
                 self.env, self.rng, self.world, self.handle_event,
                 start_time_s=self.start_time_s,
+                pending_targets=self.pending_targets,
+                log_fn=self.logger.log,
+                **self.disruption_params,
             )
             self.env.process(gen.schedule_disruptions(self.disruption_rate, duration_seconds))
         self.env.run(until=duration_seconds)
