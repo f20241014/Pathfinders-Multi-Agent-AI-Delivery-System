@@ -33,3 +33,11 @@ Contract Net is announcement, bid, award; cheapest marginal insertion is a local
 heuristic, not a guarantee of globally optimal fleet allocation. OR-Tools is a
 bounded-search reference, not a certified optimum or mathematical upper bound
 on delivery quality. Team/buddy review remains outstanding until actually done.
+
+## Week 2: insertion and Contract Net
+
+`ContractNet.allocate(order, states, now)` mutates only the winning state orders.
+Bids are cheapest feasible insertion deltas; duplicate awards raise ValueError.
+An emit callback counts every recipient; failed allocation sends announcements
+but no bid or award. Tests hand-check insertion, ties, windows, capacity, R3 hook,
+unreachable nodes, and message accounting.

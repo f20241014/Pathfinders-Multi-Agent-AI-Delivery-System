@@ -5,3 +5,5 @@ refer to the execution plan, not historical evidence of participation.
 
 - W1: shared feasibility/cost conventions, hand-checkable two-vehicle CVRP,
   isolated dependency file, primary-source implementation notes and tests.
+
+- W2: feasible marginal insertion, deterministic CNP, individual recipient logging, duplicate-award guard and four behavioral tests.
