@@ -80,4 +80,3 @@ class ContractNet:
             send('award', winner.vehicle_id)
         return AllocationResult(winner.vehicle_id if winner else None, bids, messages,
                                 process_time() - start, '' if winner else 'no_feasible_bid')
-
