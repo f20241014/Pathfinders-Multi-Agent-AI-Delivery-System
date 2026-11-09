@@ -78,3 +78,24 @@ def schedule(state: VehicleState, orders: list[Order], travel: Callable,
         total += seconds
         node = o.node
     return Schedule(True, total, arrivals)
+
+
+def priority_weight(order):
+    """R3 convention: tier 1 HIGH, tier 2 MEDIUM, tier 3 LOW."""
+    if order.priority not in (1, 2, 3):
+        raise ValueError('priority must be 1, 2 or 3')
+    return 4 - order.priority
+
+
+def adapt_r3_feasibility(engine):
+    """Adapt R3 run_feasibility_engine's dictionary to R4's tuple hook.
+
+    Supply a wrapper around the R3 engine if road/shift context is also needed.
+    No import from an unmerged branch is required.
+    """
+    def feasible(vehicle, orders):
+        result = engine(vehicle, orders)
+        if not isinstance(result, dict) or not isinstance(result.get('feasible'), bool):
+            raise ValueError('R3 engine must return a boolean feasible field')
+        return result['feasible'], result.get('trace', [])
+    return feasible

@@ -24,8 +24,8 @@ def test_central_matches_tiny_optimum_and_cnp_messages():
 def test_existing_load_priority_and_time_window_drops():
     s = state('a', 3)
     s.vehicle.load = 2
-    orders = [Order('low', 1, 1, priority=1, service_time=0),
-              Order('high', 2, 1, priority=3, service_time=0),
+    orders = [Order('low', 1, 1, priority=3, service_time=0),
+              Order('high', 2, 1, priority=1, service_time=0),
               Order('late', 100, 0, tw_end=1, service_time=0)]
     result = solve([s], orders)
     assert [o.id for o in result.routes['a']] == ['high']

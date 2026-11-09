@@ -12,8 +12,7 @@ Cost is marginal **travel seconds** for insertion into an open route (no implici
 return to depot). Waiting and service affect feasibility, not the travel objective.
 Capacity uses the simulator's accumulated-load semantics: current load plus all
 remaining demands <= capacity. No reload/unload model is invented here.
-Windows constrain service start, matching the existing simulator. Higher numeric
-priority has larger drop penalty (3 > 2 > 1). R3 can inject a `(bool, trace)`
+Windows constrain service start, matching the existing simulator. Priority tiers follow R3: 1 HIGH, 2 MEDIUM, 3 LOW; drop weight is 4 - tier. R3 can inject a `(bool, trace)`
 feasibility function; local capacity/window checks are always retained.
 
 CNP announces to m vehicles, receives one bid per feasible contractor, awards
@@ -98,3 +97,10 @@ requirements-r4.txt and covers every weekly allocation test.
 
 Real-map smoke: `python -m src.allocation.map_smoke` (existing map dependencies required).
 Full validation and PowerShell commands: docs/r4/VALIDATION.md.
+
+## Repository audit: R3 compatibility
+
+The follow-up audit aligns priority with R3 (1 highest) and provides
+`adapt_r3_feasibility(run_feasibility_engine)` for its dictionary result.
+The earlier weekly PRs proposed the opposite polarity; this follow-up corrects
+it before integration. See docs/r4/REPOSITORY_WEEK6_AUDIT.md.

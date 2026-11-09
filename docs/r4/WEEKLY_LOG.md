@@ -15,3 +15,5 @@ refer to the execution plan, not historical evidence of participation.
 - W5: opt-in executable SimPy allocation harness; dynamic arrivals/closure during travel; exact-once outcomes and baseline-vs-exhaustive quality tests.
 
 - W6: failure/partial-capacity hardening, explicit defaults, measured pilot time-budget study with raw records, handoff and viva guide. Human review/teach-back and full-system R5/R7 integration are pending.
+
+- Follow-up: audited all visible roles against end-of-W6 criteria; corrected R3/R4 priority and result-shape compatibility; regenerated R4 pilot with tier 1 highest. Original weekly PRs retained as submitted; changes are in a separate follow-up PR.
