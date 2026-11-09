@@ -1,7 +1,7 @@
 """Exhaustive tiny-instance reference, independent of OR-Tools search."""
 from itertools import permutations, product
 import math
-from src.allocation.cost_model import schedule
+from src.allocation.cost_model import priority_weight, schedule
 
 
 def exact_objective(states, orders, travel, drop_penalty=100000):
@@ -10,7 +10,7 @@ def exact_objective(states, orders, travel, drop_penalty=100000):
         raise ValueError('exhaustive checker limited to seven orders')
     best = math.inf
     for owners in product(range(-1, len(states)), repeat=len(orders)):
-        penalty = sum(drop_penalty * o.priority for o, v in zip(orders, owners) if v < 0)
+        penalty = sum(drop_penalty * priority_weight(o) for o, v in zip(orders, owners) if v < 0)
         costs = []
         for i, state in enumerate(states):
             assigned = [o for o, owner in zip(orders, owners) if owner == i]

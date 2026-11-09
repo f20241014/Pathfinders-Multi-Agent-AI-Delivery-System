@@ -16,5 +16,6 @@
     202,
     303
   ],
+  "priority_convention": "1=HIGH, 2=MEDIUM, 3=LOW; weight=4-tier",
   "threads": 1
 }

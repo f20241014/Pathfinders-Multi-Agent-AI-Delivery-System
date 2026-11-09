@@ -9,7 +9,8 @@
 - R1 owns clock/movement/terminal lifecycle. Call controller for every observed
   incident, new order and forecast refresh. Pass busy state for edge/service
   commitment. Never remove the currently traversed edge or active service.
-- R3 injects feasible(vehicle, orders) -> (bool, trace). Base capacity/windows are
+- R3 injects feasible(vehicle, orders) -> (bool, trace); wrap its dictionary
+  engine result using adapt_r3_feasibility(run_feasibility_engine). Base capacity/windows are
   always enforced. Custom constraints are postchecked in centralized mode; that
   can weaken baseline quality. Encoding them inside the solver is future work.
 - R2 shortest-path snapshot matrices are cached by source/road profile. Current
@@ -26,7 +27,7 @@
 ## Frozen R4 defaults for review
 
 Two-second solver wall budget; one routing search worker; travel objective plus
-100000 * priority per dropped order; priority 3 highest; open routes; accumulated
+100000 * (4 - priority) per dropped order; priority 1 highest; open routes; accumulated
 load; service-start windows; conservative seconds/0.001-unit scaling; no reloads.
 Pilot study config and hash live in reports/r4. Do not tune using final test seeds.
 Timing results vary with hardware; time-limited search can vary even for a seed.

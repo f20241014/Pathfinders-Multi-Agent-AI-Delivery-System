@@ -5,7 +5,7 @@ from time import process_time
 
 from ortools.constraint_solver import pywrapcp, routing_enums_pb2
 
-from src.allocation.cost_model import schedule, validate
+from src.allocation.cost_model import priority_weight, schedule, validate
 
 
 @dataclass
@@ -100,7 +100,7 @@ class CentralVRP:
                 routing.ActiveVar(index).SetValue(0)
             else:
                 time_dim.CumulVar(index).SetRange(lo, hi)
-            routing.AddDisjunction([index], self.drop_penalty * order.priority)
+            routing.AddDisjunction([index], self.drop_penalty * priority_weight(order))
         # Rounding demand up / remaining capacity down never silently overloads.
         demands = [math.ceil(o.demand * 1000) for o in orders]
         demand_cb = routing.RegisterUnaryTransitCallback(

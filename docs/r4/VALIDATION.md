@@ -36,3 +36,15 @@ External references: official Google OR-Tools guides were opened; the Smith DOI
 resolver was unavailable during this session, so the bibliography entry needs
 manual verification. Buddy review, R3 branch integration, R5 agreement and
 teach-back are human/team follow-ups; none are claimed complete.
+
+## Repository audit follow-up
+
+Priority now follows R3 (1 highest); dictionary feasibility results use an
+explicit adapter. The focused suite now has 29 passing tests, with clean lint.
+The 18 pilot rows were regenerated using the new convention; the 30-order mean
+objectives remain 800/773.33/773.33 at 0.1/0.5/2 seconds, with zero drops.
+Other-role defect reproductions and audit scope are in REPOSITORY_WEEK6_AUDIT.md
+and reports/r4/audit_reproductions.json. These do not certify those branches.
+
+Follow-up repository regression: 862 passed, 2 skipped, 3 SWIG deprecation
+warnings in 75.46 seconds, with tests/test_prediction.py excluded as above.

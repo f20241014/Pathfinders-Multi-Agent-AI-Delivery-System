@@ -13,7 +13,7 @@ from time import perf_counter
 
 from src.allocation.central_vrp import CentralVRP
 from src.allocation.contract_net import ContractNet
-from src.allocation.cost_model import VehicleState, schedule
+from src.allocation.cost_model import VehicleState, priority_weight, schedule
 from src.allocation.quality import exact_objective
 from src.sim.models import Order, Vehicle
 
@@ -55,7 +55,7 @@ def run_study(output='reports/r4'):
                     cnp_failed.append(order.id)
             cnp_travel = sum(schedule(s, s.orders, travel).travel_seconds for s in copies)
             cnp_objective = cnp_travel + sum(
-                100000 * o.priority for o in orders if o.id in cnp_failed)
+                100000 * priority_weight(o) for o in orders if o.id in cnp_failed)
             exact = exact_objective(states, orders, travel) if count == 4 else ''
             for limit in LIMITS:
                 wall_start = perf_counter()
@@ -75,7 +75,8 @@ def run_study(output='reports/r4'):
         writer.writerows(rows)
     config = dict(limits_s=LIMITS, pilot_seeds=SEEDS, order_counts=[4, 30],
                   objective='open-route travel + priority-weighted drop penalties',
-                  default_limit_s=2.0, drop_penalty=100000, threads=1)
+                  default_limit_s=2.0, drop_penalty=100000, threads=1,
+                  priority_convention='1=HIGH, 2=MEDIUM, 3=LOW; weight=4-tier')
     config_text = json.dumps(config, sort_keys=True, indent=2)
     (out/'study_config.json').write_text(config_text+'\n', encoding='utf-8')
     import platform
