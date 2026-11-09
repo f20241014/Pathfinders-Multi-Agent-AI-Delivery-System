@@ -41,3 +41,17 @@ Bids are cheapest feasible insertion deltas; duplicate awards raise ValueError.
 An emit callback counts every recipient; failed allocation sends announcements
 but no bid or award. Tests hand-check insertion, ties, windows, capacity, R3 hook,
 unreachable nodes, and message accounting.
+
+## Week 3: centralized partial-state CVRPTW
+
+`CentralVRP(travel, time_limit_s=2).resolve(states, orders, now)` returns routes,
+explicit failed IDs, objective (integer travel plus drop penalties), float travel,
+CPU and 2N messages. Snapshot mid-edge vehicles at their next node and known
+edge-exit time; exclude delivered/actively served orders. Open routes use a
+zero-cost synthetic sink. Distinct visit indices support co-located orders.
+Times round up to seconds, upper windows round down, demand rounds up to 0.001
+units, residual capacity down. This conservatism can reject borderline float
+solutions. Optional R3 feasibility is checked after solving; a rejected vehicle
+route is failed, not silently accepted. Custom rules are not encoded in OR-Tools
+and may reduce reference quality. Solver time limits are wall time; measured
+CPU includes model construction and extraction. No optimality certification.
