@@ -55,3 +55,17 @@ solutions. Optional R3 feasibility is checked after solving; a rejected vehicle
 route is failed, not silently accepted. Custom rules are not encoded in OR-Tools
 and may reduce reference quality. Solver time limits are wall time; measured
 CPU includes model construction and extraction. No optimality certification.
+
+## Week 4: mode/event integration boundary
+
+`AllocationController(world, states, mode, emit).event(now, new_order=None)`
+wires centralized re-solving and decentralized CNP to existing World/Vehicle/Order
+interfaces. R1 can call it on each observed event; populate `busy` for committed
+edges or service, remove active/delivered orders from pending queues, and update
+live position/load on completion. Snapshots do not mutate physical positions.
+WorldTravel caches per road-class profile and source, using forecasts plus only
+current closures/spikes for both planners. Rebuild on events/forecast updates.
+This is frozen-snapshot routing, not FIFO time-dependent optimization.
+Full-mode R4 allocation is identical to independent; R5 negotiation and R7
+D* Lite remain their owners' responsibility. The existing R1 default runner is
+unchanged; the R4 executable integration harness follows in Week 5.

@@ -9,3 +9,5 @@ refer to the execution plan, not historical evidence of participation.
 - W2: feasible marginal insertion, deterministic CNP, individual recipient logging, duplicate-award guard and four behavioral tests.
 
 - W3: OR-Tools CVRPTW, residual-load/availability partial state, priorities, explicit drops, conservative integer scaling and 2N message accounting; four solver tests.
+
+- W4: shared forecast/incident graph adapter, road profiles, cached paths, mode/event controller, mid-edge/active-service snapshots and explicit failure logs; integration boundary tested.
