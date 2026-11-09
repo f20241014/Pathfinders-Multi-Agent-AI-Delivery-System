@@ -1,0 +1,35 @@
+# R4 allocation and centralized baseline
+
+Catch-up implementation authored in November 2026, organized by planned week.
+No commit dates or experimental results are backdated.
+
+## Week 1: model and toy CVRP
+
+Run `python -m src.allocation.toy_cvrp` and `python -m pytest tests/test_allocation_w1.py`.
+Install the isolated dependencies with `pip install -r requirements-r4.txt`.
+
+Cost is marginal **travel seconds** for insertion into an open route (no implicit
+return to depot). Waiting and service affect feasibility, not the travel objective.
+Capacity uses the simulator's accumulated-load semantics: current load plus all
+remaining demands <= capacity. No reload/unload model is invented here.
+Windows constrain service start, matching the existing simulator. Higher numeric
+priority has larger drop penalty (3 > 2 > 1). R3 can inject a `(bool, trace)`
+feasibility function; local capacity/window checks are always retained.
+
+CNP announces to m vehicles, receives one bid per feasible contractor, awards
+one winner if any: m + bids + (1 if awarded else 0). This is allocation traffic,
+not R5 negotiation traffic; no award is sent for an unassignable order. Tie-break
+by vehicle ID. These counting and priority conventions are proposals for team review.
+
+## Primary references checked during implementation
+
+- https://developers.google.com/optimization/routing/cvrp
+- https://developers.google.com/optimization/routing/vrptw
+- https://developers.google.com/optimization/routing/penalties
+- https://developers.google.com/optimization/routing/routing_options
+- Smith (1980), Contract Net Protocol: https://doi.org/10.1109/TC.1980.1675516
+
+Contract Net is announcement, bid, award; cheapest marginal insertion is a local
+heuristic, not a guarantee of globally optimal fleet allocation. OR-Tools is a
+bounded-search reference, not a certified optimum or mathematical upper bound
+on delivery quality. Team/buddy review remains outstanding until actually done.
