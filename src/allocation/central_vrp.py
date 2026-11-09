@@ -60,8 +60,8 @@ class CentralVRP:
         starts = list(range(n, n + count))
         manager = pywrapcp.RoutingIndexManager(len(nodes), count, starts, [sink] * count)
         routing = pywrapcp.RoutingModel(manager)
-        horizon = max(1, math.ceil(max([now] + [o.tw_end for o in orders]
-                                      + [s.available_at for s in states]))) + 86400
+        latest = [now] + [o.tw_end for o in orders] + [s.available_at for s in states]
+        horizon = max(1, math.ceil(max(latest))) + 86400
         callbacks = []  # retain Python closures for the lifetime of the solver
         time_callbacks = []
         for state in states:
