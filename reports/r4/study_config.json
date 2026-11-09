@@ -1,0 +1,20 @@
+{
+  "default_limit_s": 2.0,
+  "drop_penalty": 100000,
+  "limits_s": [
+    0.1,
+    0.5,
+    2.0
+  ],
+  "objective": "open-route travel + priority-weighted drop penalties",
+  "order_counts": [
+    4,
+    30
+  ],
+  "pilot_seeds": [
+    101,
+    202,
+    303
+  ],
+  "threads": 1
+}

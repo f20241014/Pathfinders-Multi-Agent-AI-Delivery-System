@@ -30,6 +30,11 @@ class AllocationSimulation(DeliverySimEnvironment):
         self.vehicles[vehicle.id] = vehicle
         self.states.append(VehicleState(vehicle))
 
+    def log_event(self, event_type, payload, agent_id='env'):
+        # Parent writes sim_complete before horizon reconciliation; defer it.
+        if event_type != 'sim_complete':
+            super().log_event(event_type, payload, agent_id)
+
     def _emit(self, kind, now, payload):
         self.logger.log(kind, now, payload)
         if kind == 'order_failed':
@@ -111,6 +116,8 @@ class AllocationSimulation(DeliverySimEnvironment):
                            {'order_id': order.id, 'reason': 'horizon_exceeded'})
         self.n_delivered = sum(x == 'delivered' for x in self.terminal.values())
         self.n_failed = sum(x == 'failed' for x in self.terminal.values())
+        super().log_event('sim_complete', {'delivered': self.n_delivered,
+                                           'failed': self.n_failed})
         self.log_event('allocation_summary', {'delivered': self.n_delivered,
                                               'failed': self.n_failed})
 
