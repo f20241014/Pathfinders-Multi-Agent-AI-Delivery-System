@@ -69,3 +69,19 @@ This is frozen-snapshot routing, not FIFO time-dependent optimization.
 Full-mode R4 allocation is identical to independent; R5 negotiation and R7
 D* Lite remain their owners' responsibility. The existing R1 default runner is
 unchanged; the R4 executable integration harness follows in Week 5.
+
+## Week 5: executable integration and quality gate
+
+`python -m src.allocation.sim_runner --mode centralized` runs a synthetic
+SimPy smoke scenario with dynamic orders, real Vehicle/Order/World and JSONL
+interfaces. Modes independent/full use the same CNP; full is an allocation-only
+smoke mode, not a substitute for the R5/R7 complete experiment. The opt-in
+AllocationSimulation subclass supports event replanning, committed edge/service
+protection, explicit horizon failures, road restrictions and accumulated load.
+Final allocation_summary is authoritative; the inherited sim_complete row is
+written before horizon reconciliation. Event feed and physical traversal remain
+R1-owned. Tests inject a closure during travel and check exact-once terminals.
+
+An independent exhaustive checker enumerates tiny assignments/drop choices/stop
+permutations and tests the solver objective at three capacities. This establishes
+small-case correctness, not near-optimality for the full Hyderabad scenario.
