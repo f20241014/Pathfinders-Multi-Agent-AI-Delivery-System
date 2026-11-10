@@ -1,4 +1,4 @@
-"""Comprehensive Unit Tests for R5 Coordination Module."""
+"""Comprehensive Unit Tests for Coordination Module."""
 
 import random
 import pytest
@@ -47,7 +47,7 @@ def test_random_cross_check_detect_conflicts():
 
 
 def test_threshold_trigger_negative_ttc():
-    """Verifies ThresholdTrigger fires for ongoing conflicts (TTC < 0) and TTC < tau."""
+    """It will verify ThresholdTrigger fires for ongoing conflicts (TTC < 0) and TTC < tau."""
     trigger = ThresholdTrigger(tau=60.0)
     routes = {
         "V1": VehicleRoute("V1", ["A", "B"], start_time=0.0, travel_times={("A", "B"): 10.0}),
@@ -95,7 +95,7 @@ def test_message_counter_d7():
 
 
 def test_credits_never_go_negative():
-    """Verifies vehicle with 1 credit winning price 6 drops to 0, not negative."""
+    """It will verify vehicle with 1 credit winning price 6 drops to 0, not negative."""
     routes = [
         VehicleRoute("V1", ["A", "B"], start_time=0.0, travel_times={("A", "B"): 10.0}, priority_weight=2.0, detour_extra_time=5.0),
         VehicleRoute("V2", ["A", "B"], start_time=1.0, travel_times={("A", "B"): 10.0}, priority_weight=1.0, detour_extra_time=3.0),
@@ -136,7 +136,7 @@ def test_vickrey_truthfulness_property():
 
 
 def test_input_list_order_independence():
-    """Verifies auction results do not depend on the order of input contesting_routes list."""
+    """It will verify auction results do not depend on the order of input contesting_routes list."""
     r1 = VehicleRoute("V1", ["A", "B"], start_time=0.0, travel_times={("A", "B"): 10.0}, priority_weight=2.0)
     r2 = VehicleRoute("V2", ["A", "B"], start_time=0.0, travel_times={("A", "B"): 10.0}, priority_weight=1.0)
 
