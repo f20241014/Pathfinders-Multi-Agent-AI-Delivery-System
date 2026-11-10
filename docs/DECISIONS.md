@@ -16,6 +16,8 @@ Defaults taken from the project plan; change a line here if the team decides oth
 * **D12 Metric definitions:** Evaluated as defined in Section 7 of the project specification.
 * **Traversal Policy:** Traversal time is fixed when a vehicle enters an edge (mid-edge disruptions affect subsequent edge entries).
 * **Clock Alignment:** Standardized all simulation event logging and disruption checking to use absolute time in seconds from midnight ($t = \text{start\_time\_s} + \text{env.now}$).
-* **Closure Connectivity Guard:** Deferred to Week 3 (TODO(R1)).
+* **Closed Roads:** A vehicle whose next road is closed waits at its node and re-checks every 60 s (`blocked_wait`) until the road reopens. Re-routing around closures is R7's job (TODO(R7)).
+* **Closure Connectivity Guard (D11):** A closure is only placed if every vehicle can still reach each pending order node it could reach just before. Otherwise another random road is drawn, up to `max_closure_attempts` (default 20); if all fail the closure is skipped and logged as `closure_skipped`. Destinations already unreachable do not block closures. A vehicle on a road counts as being at the road's end. Spikes are not guarded.
+* **Disruption Parameters:** Closure/spike duration (default 600-1800 s) and spike multiplier (default x1.2-3.0, must be >= 1.0) are set in the `disruptions:` config block.
 * **Travel Time:** edge time = R2 `free_flow_time` x R6 traffic multiplier x active spike multipliers; infinite while the road is closed (closures/spikes active for start <= t < expiry). Free-flow only when R6's model is unavailable.
 * **Time Windows:** Absolute seconds from midnight. A vehicle arriving early waits until max(tw_start, release_time); arriving after tw_end fails the order (`time_window_missed`); service takes `service_time`.

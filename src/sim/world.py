@@ -5,7 +5,7 @@ All times are absolute seconds from midnight (t = start_time_s + env.now).
 import logging
 import math
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 import networkx as nx
 
@@ -101,6 +101,30 @@ class World:
             start <= t < expiry
             for start, expiry in self.closures.get((u, v, key), [])
         )
+
+    def active_closures(self, t: float) -> Set[EdgeId]:
+        """Roads (u, v, key) closed at time t."""
+        return {
+            edge for edge, windows in self.closures.items()
+            if any(start <= t < expiry for start, expiry in windows)
+        }
+
+    def reachable_from(self, source, closed: Iterable[EdgeId] = ()) -> Set:
+        """Nodes reachable from source (itself included) with the given roads removed.
+
+        A parallel road u -> v with another key keeps u -> v connected.
+        """
+        if source not in self.G:
+            return set()
+        view = nx.restricted_view(self.G, [], list(closed))
+        return nx.descendants(view, source) | {source}
+
+    def has_path(self, source, target, closed: Iterable[EdgeId] = ()) -> bool:
+        """True if target is reachable from source with the given roads removed."""
+        if source not in self.G or target not in self.G:
+            return False
+        view = nx.restricted_view(self.G, [], list(closed))
+        return nx.has_path(view, source, target)
 
     def spike_multiplier(self, u, v, t: float, key: Optional[int] = None) -> float:
         """Product of the spikes active at time t (1.0 if none)."""

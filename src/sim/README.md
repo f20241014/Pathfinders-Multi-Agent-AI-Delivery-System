@@ -66,9 +66,43 @@ edge_time(u, v, t, key=None) = inf                              if the road is c
 ## Disruptions (D11)
 
 Poisson arrivals at `disruption_rate_per_hour` (mean gap 3600 / rate s). Each event is
-a traffic spike (40%, x1.2-3.0), a closure (30%) or a new order (30%). Spikes and
-closures hit a random road for 600-1800 s starting at the event time. Events are
-logged and passed to every `env.subscribe(callback)` listener.
+a traffic spike (40%), a closure (30%) or a new order (30%). Spikes and closures hit a
+random road starting at the event time. Events are logged and passed to every
+`env.subscribe(callback)` listener.
+
+Durations and spike sizes come from the optional `disruptions:` config block
+(defaults shown; unknown keys or bad values raise `ValueError` when the
+environment is built):
+
+```yaml
+disruptions:
+  min_duration_s: 600.0      # spike/closure length, uniform in [min, max]
+  max_duration_s: 1800.0
+  min_spike: 1.2             # spike multiplier, uniform in [min, max]; must be >= 1.0
+  max_spike: 3.0
+  max_closure_attempts: 20   # closure guard redraws, see below
+```
+
+**Closure guard** (D11 "closures never disconnect pending destinations"): before a
+closure is placed, `EventGenerator.closure_disconnects` checks it against
+`env.pending_targets()`, which gives each vehicle's position (the end of the road it is on
+while driving) and its undelivered order nodes. A closure that would cut a vehicle off
+from a destination it can reach right now is redrawn on another random road; after
+`max_closure_attempts` draws it is skipped and logged as `closure_skipped`. Destinations
+already unreachable (one-way streets, earlier closures) never block a closure. Fast
+path: if `v` is still reachable from `u` without the road, nobody can be cut off.
+Spikes are never blocked. Subclasses that drive vehicles their own way (R4's
+`AllocationSimulation`) should override `pending_targets()`; until then it returns
+nothing for them and the guard allows every closure.
+
+## Profiling
+
+```bash
+python -m src.sim.run --config configs/sim_default.yaml --profile      # top 20
+python -m src.sim.run --config configs/sim_default.yaml --profile 40   # top 40
+```
+
+Prints a `cProfile` table sorted by cumulative time.
 
 ## Hand-offs
 
@@ -80,7 +114,5 @@ logged and passed to every `env.subscribe(callback)` listener.
   available; `TODO(R6)` in `world.py` to confirm the clock convention.
 - **R7 (triggers / re-routing)**: subscribe to `disruption` events; vehicles currently
   wait at closures (`TODO(R7)`); use `world.cost_fn_at(t)` to re-plan.
-- **R8 (metrics)**: read the JSONL log, schema in `docs/log_schema.md`.
-
-Not done yet: closure-connectivity guard (D11 "closures never disconnect pending
-destinations") is Week 3.
+- **R8 (metrics)**: read the JSONL log, schema in `docs/log_schema.md`
+  (new env event `closure_skipped`).

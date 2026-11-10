@@ -1,4 +1,10 @@
 disruption_rate_per_hour: 5.0
+disruptions:
+  min_duration_s: 600.0
+  max_duration_s: 1800.0
+  min_spike: 1.2
+  max_spike: 3.0
+  max_closure_attempts: 20
 duration_seconds: 14400.0
 headless: true
 mode: independent

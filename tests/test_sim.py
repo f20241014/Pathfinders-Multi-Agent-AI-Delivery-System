@@ -368,6 +368,129 @@ def test_seeded_reproducibility(toy_graph, tmp_path):
 
 
 # ----------------------------------------------------------------------
+# Closure guard (D11: closures never disconnect pending destinations)
+# ----------------------------------------------------------------------
+def guard_gen(graph, targets, log=None, **params):
+    world = FakeWorld(graph)
+    received = []
+    log_fn = None if log is None else (lambda *row: log.append(row))
+    gen = EventGenerator(simpy.Environment(), np.random.default_rng(0), world,
+                         received.append, pending_targets=lambda: targets,
+                         log_fn=log_fn, **params)
+    return world, gen, received
+
+
+def test_active_closures_and_reachability(toy_graph):
+    world = FakeWorld(toy_graph)
+    world.add_disruption(2, 3, 0, expiry_t_seconds=22000, start_t_seconds=21700)
+    assert world.active_closures(START) == set()
+    assert world.active_closures(21700) == {(2, 3, 0)}
+    assert world.reachable_from(1) == {1, 2, 3, 4}
+    assert world.reachable_from(1, world.active_closures(21700)) == {1, 2}
+    assert world.reachable_from(99) == set()          # node not on the map
+
+
+def test_guard_flags_only_disconnecting_closures(toy_graph):
+    _, gen, _ = guard_gen(toy_graph, [(1, [3])])
+    assert gen.closure_disconnects((1, 2, 0), START)
+    assert gen.closure_disconnects((2, 3, 0), START)
+    assert not gen.closure_disconnects((3, 4, 1), START)    # downstream of the target
+
+
+def test_guard_ignores_already_unreachable_and_already_closed(toy_graph):
+    world, gen, _ = guard_gen(toy_graph, [(3, [1])])        # 3 can never reach 1
+    assert not gen.closure_disconnects((1, 2, 0), START)
+    world.add_disruption(2, 3, 0, expiry_t_seconds=22000)
+    _, gen2, _ = guard_gen(toy_graph, [(1, [3])])
+    gen2.world = world
+    assert not gen2.closure_disconnects((2, 3, 0), START)   # closed already: no change
+
+
+def test_guard_allows_closure_with_parallel_road():
+    G = nx.MultiDiGraph()
+    G.add_edge(1, 2, key=0, length=100.0)
+    G.add_edge(1, 2, key=1, length=300.0)
+    world, gen, _ = guard_gen(G, [(1, [2])])
+    assert not gen.closure_disconnects((1, 2, 0), START)
+    world.add_disruption(1, 2, 1, expiry_t_seconds=22000)
+    assert gen.closure_disconnects((1, 2, 0), START)        # both roads closed
+
+
+def test_generator_redraws_disconnecting_closures():
+    G = nx.MultiDiGraph()
+    G.add_edge(1, 2, key=0, length=100.0)                    # bridges to the target
+    G.add_edge(2, 3, key=0, length=100.0)
+    G.add_edge(10, 11, key=0, length=100.0)                  # harmless roads
+    G.add_edge(11, 10, key=0, length=100.0)
+    world, gen, received = guard_gen(G, [(1, [3])])
+    for _ in range(30):
+        gen._emit_road_disruption("closure")
+    closed = {tuple(e.payload["edge"]) for e in received}
+    assert len(received) == 30 and closed <= {(10, 11, 0), (11, 10, 0)}
+    assert world.reachable_from(1, world.active_closures(START)) >= {3}
+
+
+def test_generator_skips_closure_when_every_road_disconnects():
+    G = nx.MultiDiGraph()
+    G.add_edge(1, 2, key=0, length=100.0)
+    log = []
+    world, gen, received = guard_gen(G, [(1, [2])], log=log, max_closure_attempts=3)
+    gen._emit_road_disruption("closure")
+    assert received == [] and world.closures == {}
+    assert log == [("closure_skipped", START, {"attempts": 3})]
+    gen._emit_road_disruption("traffic_spike")              # spikes are never blocked
+    assert len(received) == 1 and received[0].payload["type"] == "traffic_spike"
+
+
+def test_pending_targets_follow_the_vehicle(toy_graph, tmp_path):
+    env = make_env(FakeWorld(toy_graph), tmp_path)
+    order = Order(id="O1", node=3, demand=5, tw_start=START, tw_end=30000, service_time=10)
+    env.add_vehicle(vehicle([2, 3, 4]), [order])
+    assert env.pending_targets() == []                      # process not started yet
+    env.run(5)
+    assert env.pending_targets() == [(2, [3])]              # on road 1->2: source is 2
+    env.run(40)
+    assert env.pending_targets() == []                      # delivered at 3
+
+
+def test_env_guard_keeps_destination_reachable(toy_graph, tmp_path):
+    env = make_env(FakeWorld(toy_graph), tmp_path, disruption_rate_per_hour=3600.0,
+                   disruptions={"max_closure_attempts": 1})
+    order = Order(id="O1", node=4, demand=5, tw_start=START, tw_end=60000)
+    env.add_vehicle(vehicle([2, 3, 4]), [order])
+    env.run(1800)
+    rows = read_log(env)
+    # Every road ahead is a bridge to node 4, so closures on it are skipped
+    # and the vehicle never waits at a closed road.
+    assert events(rows, "closure_skipped")
+    assert not events(rows, "blocked_wait")
+    assert events(rows, "order_delivered")
+
+
+def test_disruption_settings_from_config(toy_graph, tmp_path):
+    env = make_env(FakeWorld(toy_graph), tmp_path, disruption_rate_per_hour=200.0,
+                   disruptions={"min_duration_s": 100, "max_duration_s": 100,
+                                "min_spike": 2.0, "max_spike": 2.0})
+    env.run(3600)
+    road = [r["payload"] for r in events(read_log(env), "disruption")]
+    assert road and all(p["duration"] == 100.0 for p in road)
+    assert {p["magnitude"] for p in road if p["type"] == "traffic_spike"} == {2.0}
+
+
+@pytest.mark.parametrize("block", [
+    {"min_duration": 100},                                  # typo: unknown key
+    {"min_duration_s": 900, "max_duration_s": 600},
+    {"min_duration_s": 0},
+    {"min_spike": 0.5},                                     # a spike may not speed roads up
+    {"min_spike": 3.0, "max_spike": 2.0},
+    {"max_closure_attempts": 0},
+])
+def test_bad_disruption_config_fails_at_setup(toy_graph, tmp_path, block):
+    with pytest.raises(ValueError):
+        make_env(FakeWorld(toy_graph), tmp_path, disruptions=block)
+
+
+# ----------------------------------------------------------------------
 # Logging
 # ----------------------------------------------------------------------
 def test_log_has_nine_keys_in_order(toy_graph, tmp_path):
