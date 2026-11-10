@@ -147,3 +147,17 @@ python -m src.search.heuristic_cost --pairs 200 --seed 42 --calls 100000
 ```
 Tests: `tests/test_search_time_dependent.py`, `test_fifo_check.py`, `test_search_yen.py`, `test_benchmark.py`,
 `test_heuristic_check.py`, `test_heuristic_cost.py`.
+
+## Travel-time matrix (Week 3)
+`travel_matrix.py`: N x N travel times at a frozen time t (snapshot), one cached Dijkstra row per (t, source).
+```python
+tm = TravelTimeMatrix(world.G, cost_fn_factory)    # cost_fn_factory(t) -> cost_fn(u, v, data)
+m = tm.travel_time_matrix(nodes, t=28800)          # m[i][j] seconds, directed, inf = no route
+```
+Repeat calls are cache hits (`tm.hits`, `tm.misses`, `tm.expanded`); `clear_cache()` after the world changes. See `docs/travel_matrix.md`.
+
+**Warning (D10):** for planning, pass a cost function built from PREDICTED times plus the live closure/spike feed
+(as R4's WorldTravel does), not `World.cost_fn_at`. `cost_fn_at` uses actual `edge_time`, which is ground truth for
+the simulator and metrics only. Planning with it would give agents knowledge of the future and break D10 (all
+conditions see the same information). No predicted-cost factory exists yet; `docs/travel_matrix.md` has a 6-line
+wrapper, checked against WorldTravel.
