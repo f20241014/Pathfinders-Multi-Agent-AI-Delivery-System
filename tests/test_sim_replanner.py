@@ -193,7 +193,7 @@ def test_random_closures_vehicle_always_matches_astar(tmp_path):
         checks = []
 
         def check(event):
-            vr = sr.vehicles["V1"][1]
+            vr = sr.agents["V1"].replanner
             if vr.planner.done:
                 return
             here = vr.position
