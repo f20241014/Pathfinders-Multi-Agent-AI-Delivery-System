@@ -6,7 +6,7 @@
 - `astar.py`: A* from scratch, the same as Dijkstra but ordered by `f = g + h`.
 - `dstar_lite.py` (R7): `DStarLite` incremental search (Koenig & Likhachev 2002). See the D* Lite section below.
 - `multi_stop.py` (R7): `MultiStopPlanner`, one D* Lite per leg for a vehicle with several stops.
-- `sim_replanner.py` (R7): D* Lite inside R1's simulator (`SimReplanner`, `reroute`).
+- `sim_replanner.py` (R7): World costs for D* Lite and `reroute()`; the fleet logic is `src/sim/agent_planner.py` (Week 4).
 - `benchmark_replan.py` (R7): D* Lite vs A* replanning benchmark, figure F3.
 - `../world/graph_loader.py`: `load_road_graph(name)` prepares a graph for search.
 - `../viz/plot_route.py`: draws one A* route to `docs/route_example.png`.
@@ -186,11 +186,12 @@ p.unreachable_stops()            # stops a closure has cut off
 `src/search/sim_replanner.py` connects D* Lite to `DeliverySimEnvironment` **without changing R1's code**:
 
 ```python
-from src.search.sim_replanner import SimReplanner
-replanner = SimReplanner(env, heuristic=make_heuristic(world.graph()))
-replanner.register(vehicle, stops=[o.node for o in orders])   # sets vehicle.remaining_route
+from src.sim.agent_planner import AgentPlanner        # Week 4 (SimReplanner is the same class)
+planner = AgentPlanner(env, mode="independent", heuristic=make_heuristic(world.graph()))
+planner.register(vehicle, orders)        # sets vehicle.remaining_route
 env.add_vehicle(vehicle, orders)
 env.run()
+planner.finish()                         # logs replan_summary
 ```
 - Costs follow decision D10: predicted travel time x live spike multiplier, `inf` while closed.
 - It listens to `env.subscribe`. On every closure or spike, each vehicle's planner is updated and its
@@ -237,3 +238,39 @@ Median speed-up = A* CPU / D* Lite CPU. What it shows, honestly:
 - **Hundreds of changes at once:** D* Lite is about 2x slower than A*, because repairing costs more per
   node than searching fresh. Above that a fresh plan (new `DStarLite`) is the better choice.
 - Rough, single-machine figures; rerun with `--trips` and other seeds for the report.
+
+## Agent replanning, independent mode, trigger toggle (R7, Week 4)
+`src/sim/agent_planner.py` (R7 owns it, plan section 4) turns the planners above into agent behaviour inside
+R1's simulator, through `env.subscribe` (R1's code unchanged).
+
+- `ReplanningAgent.on_world_change(changes, t)`: the plan's W4 entry point. `changes` are disruption Events (or
+  payloads, or `(u, v)` roads). The agent finds where the vehicle really is (mid-road: the end of that road, it
+  cannot reverse), updates only those roads with D10 costs (predicted time x live spike, `inf` while closed),
+  repairs D\* Lite and returns a `Route` (nodes, planned ETAs, order ids). `None` = nothing it sees changed;
+  a Route with no nodes = a stop became unreachable (vehicle keeps its old route; W5 decides).
+- `AgentPlanner(env, mode, heuristic, coordination=None, trigger_enabled=None)`: one agent per vehicle.
+  - `mode="independent"`: replan locally, never negotiate (lower-bound baseline). Enabling the trigger raises.
+  - `mode="full"`: after every replan, calls `coordination(vehicle_id, route, routes_by_vehicle, t)`, the hook
+    for R5's trigger + negotiation (W5), only while `trigger_enabled` is on. It returns the messages sent.
+  - `mode="centralized"` raises: that is R4's OR-Tools re-solve.
+  - `set_trigger_enabled(bool)`: runtime toggle, logged as `trigger_toggle`.
+  - `plan(vehicles, orders)` implements the `Planner` interface; `routes()` gives every vehicle's Route.
+  - `finish()` logs `replan_summary`: replans, replan CPU, negotiation calls and messages (0 in independent mode),
+    unreachable stops.
+- Every replan logs a `replan` row with `cpu_seconds` (D9), `expanded`, `mode`, `trigger_enabled`.
+
+**For R1's mode switch (W4)**, in `run_from_config` after the vehicles are built:
+```python
+if config.get("mode", "independent") in ("independent", "full"):
+    planner = AgentPlanner(env, mode=config["mode"], heuristic=make_heuristic(world.graph()),
+                           coordination=None)            # R5's hook in W5
+    for v in vehicles:
+        planner.register(v, assignment[v.id])
+...
+env.run(...)
+planner.finish()
+```
+Tests (`tests/test_agent_planner.py`): closure on the path reroutes; no path handled without crashing; independent
+mode sends zero negotiation messages even with a hook given; every replan logs CPU; full mode calls the hook after
+each replan; the runtime toggle stops it; R1's own disruption generator on the real map with every replan checked
+against A\*.
