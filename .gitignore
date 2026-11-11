@@ -17,3 +17,9 @@ __pycache__/
 # Virtual environments
 venv/
 .venv/
+
+data/raw/
+data/profile/
+nodes_fake.csv
+__pycache__/
+.pytest_cache/
