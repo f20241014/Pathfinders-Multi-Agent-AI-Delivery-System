@@ -9,9 +9,14 @@ vehicle moves. A closed road has cost math.inf. Timings: src/search/README.md.
 
 import heapq
 import math
+import warnings
 
 INF = math.inf
 H_SLACK = 1e-9   # relative slack on a given heuristic, see heuristic()
+
+
+class HeuristicWarning(UserWarning):
+    """A road became cheaper than the heuristic allows (h overestimates)."""
 
 
 class DStarLite:
@@ -187,6 +192,17 @@ class DStarLite:
 
         if math.isnan(new_cost) or new_cost < 0:
             raise ValueError("Edge cost must be nonnegative (or inf)")
+
+        # Debug check: with a heuristic, no road may be cheaper than h says
+        # (with make_heuristic(G): never below free-flow time). If it is,
+        # D* Lite can return a non-optimal route, so warn early.
+        if self._h is not None and new_cost < self.heuristic(u, v):
+            warnings.warn(
+                f"Road {u} -> {v} now costs {new_cost:.6g}, below the "
+                f"heuristic's bound {self._h(u, v):.6g}: the heuristic "
+                "overestimates and routes may not be optimal",
+                HeuristicWarning, stacklevel=2,
+            )
 
         self.graph[u][v] = float(new_cost)
         self._update_vertex(u)
