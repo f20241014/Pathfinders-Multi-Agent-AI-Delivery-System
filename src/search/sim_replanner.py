@@ -5,14 +5,10 @@ Two pieces, neither edits R1's files:
 * VehicleReplanner: one vehicle's multi-stop D* Lite planner fed with costs
   from R1's World (D10: predicted travel time plus the live road-status feed
   of closures and spikes; a closed road costs inf).
-* SimReplanner: subscribes to DeliverySimEnvironment events. When a closure
-  or spike happens, every registered vehicle's planner is updated and its
-  remaining_route is replaced with the new D* Lite route. A vehicle in the
-  middle of a road cannot turn back, so it replans from the end of that road.
+* reroute(): a one-off new route, for the wait loop in environment.py.
 
-    replanner = SimReplanner(env, heuristic=make_heuristic(world.graph()))
-    replanner.register(vehicle, stops=[order.node for order in orders])
-    env.run()
+The fleet-level event handling (formerly SimReplanner) is
+src/sim/agent_planner.py: AgentPlanner. SimReplanner is kept as a name for it.
 
 See src/search/README.md for the 5-line change that replaces the
 "wait 60 s" TODO(R7) in environment.py with reroute().
@@ -20,7 +16,6 @@ See src/search/README.md for the 5-line change that replaces the
 
 import logging
 import math
-import time
 
 from src.search.multi_stop import MultiStopPlanner
 
@@ -152,79 +147,12 @@ def reroute(world, vehicle, stops, t_seconds, heuristic=None):
     return path[1:]
 
 
-class SimReplanner:
-    """Reroutes registered vehicles when the World changes (independent mode).
+def __getattr__(name):
+    """SimReplanner (Week 3) is now src.sim.agent_planner.AgentPlanner (Week 4).
 
-    Uses R1's DeliverySimEnvironment.subscribe hook, so R1's code is
-    unchanged. Each reroute is logged as a "replan" event with its CPU time
-    (time.process_time, decision D9) and the number of nodes expanded.
+    Imported lazily: agent_planner imports this module.
     """
-
-    def __init__(self, env, heuristic=None):
-        self.env = env
-        self.heuristic = heuristic
-        self.vehicles = {}          # id -> (vehicle, VehicleReplanner, planned)
-        env.subscribe(self.on_event)
-
-    def register(self, vehicle, stops, order_ids=None):
-        """Plan the vehicle's route through stops and set remaining_route."""
-        t = self.env.get_current_time()
-        vr = VehicleReplanner(self.env.world, vehicle.current_node, stops, t,
-                              self.heuristic, order_ids)
-        path = vr.path()
-        if path:
-            vehicle.remaining_route = path[1:]
-        self.vehicles[vehicle.id] = (vehicle, vr, path)
-        return path
-
-    def _sync(self, vehicle, vr, planned):
-        """Move the planner to where the vehicle is in its planned path.
-
-        remaining_route is a suffix of the planned path (the environment only
-        pops from its front). A vehicle on a road cannot turn back, so its
-        planning start is the end of that road.
-        """
-        rest = list(vehicle.remaining_route)
-        if vehicle.current_edge is not None:
-            rest = [vehicle.current_edge[1]] + rest
-        n = len(planned)
-        if not planned or len(rest) >= n or planned[n - len(rest):] != rest:
-            # Not our route any more (or the vehicle is waiting on a road it
-            # already popped): plan from where it is, same remaining stops.
-            start = (vehicle.current_edge[1] if vehicle.current_edge
-                     else vehicle.current_node)
-            vr.advance(start)
-            return start
-        start_idx = n - len(rest) - 1
-        if vehicle.current_edge is not None:
-            start_idx += 1
-        for node in planned[1:start_idx + 1]:
-            vr.advance(node)
-        return planned[start_idx]
-
-    def on_event(self, event):
-        if event.event_type != "disruption":
-            return
-        u, v, _key = event.payload["edge"]
-        for vid, (vehicle, vr, planned) in list(self.vehicles.items()):
-            if vr.planner.done:
-                continue
-            cpu0 = time.process_time()
-            start = self._sync(vehicle, vr, planned)
-            changed = vr.road_changed(u, v, event.t)
-            if not changed:
-                continue
-            path = vr.path()
-            cpu = time.process_time() - cpu0
-            if path:
-                vehicle.remaining_route = path[1:]
-                self.vehicles[vid] = (vehicle, vr, path)
-            self.env.log_event("replan", {
-                "trigger": event.payload.get("type"),
-                "edge": [u, v],
-                "from_node": start,
-                "route_found": bool(path),
-                "unreachable_stops": vr.planner.unreachable_stops(),
-                "expanded": vr.planner.expanded,
-                "cpu_seconds": cpu,
-            }, agent_id=vid)
+    if name == "SimReplanner":
+        from src.sim.agent_planner import AgentPlanner
+        return AgentPlanner
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
