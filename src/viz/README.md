@@ -30,3 +30,21 @@ Measured on the 10-vehicle, 4 h demo: 481 frames in 46.4 s (0.096 s per frame).
 The state rules, timings, and gaps (straight-line motion, dynamic orders not drawn,
 messages n/a, order locations from the config, single run only) are in
 [`docs/replay_viz.md`](../../docs/replay_viz.md).
+
+## Side-by-side replay (Week 5)
+
+| file | what |
+|------|------|
+| `multipane.py` | 2 or 3 logs side by side on one clock, per-pane HUD, negotiation flashes, playback keys |
+| `demo_pair.py` | demo runs for the viewer: `viz_demo` without and with R7's planner (not the experiment) |
+
+```bash
+python -m src.viz.demo_pair                       # logs/pair_noreplan.jsonl, logs/pair_independent.jsonl
+python -m src.viz.multipane --logs logs/pair_noreplan.jsonl logs/pair_independent.jsonl     --labels "no replanning" "independent" --config configs/viz_demo.yaml --show
+```
+
+Logs with a different scenario or seed are refused (`--allow-mismatch` renders them under a
+red "NOT A COMPARISON" banner). Keys in `--show`: space pause, `+`/`-` speed 0.25x-16x,
+arrows step one frame, `r` restart. Messages show `n/a (not logged)` when a log has no
+message rows: no code logs them yet, and the negotiation event contract is an assumption
+to confirm with R5, R1 and R8. Details, timings and gaps: [`docs/multipane_viz.md`](../../docs/multipane_viz.md).
