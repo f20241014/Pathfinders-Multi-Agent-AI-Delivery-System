@@ -1,147 +1,56 @@
-# Amazon Last Mile Dataset — Data Profile
+# Data profile — Amazon Last Mile Routing Research Challenge 2021
 
-**Role:** R3 — Knowledge Representation & Reasoning and Real-Demand Scenario Engineering  
-**Dataset:** Amazon Last Mile Routing Research Challenge 2021  
-**Purpose:** Analyse historical delivery demand characteristics to support realistic order generation and constraint modelling.
+Owner: R3 · Fill the numbers from `data/profile/summary.json` after running `src/data/profile_amazon.py`.
 
-## 1. Dataset Overview
+## Source
+- Merchán et al. (2022), Amazon Last Mile Routing Research Challenge dataset, AWS Open Data.
+- S3 bucket: `s3://amazon-last-mile-challenges/almrrc2021/` (public, `--no-sign-request`).
+- License: **CC BY-NC 4.0** — non-commercial use, credit Amazon.
+- Files used: `route_data.json`, `package_data.json` (training split, `model_build_inputs/`).
+- Files **not** used: `travel_times.json` (largest file; we use our own OSM travel times), `actual_sequences.json`, `invalid_sequence_scores.json`.
+- Download size of what we used: ___ MB · Routes profiled: ___ (all / subset of ___)
 
-The Amazon Last Mile Routing dataset contains historical delivery route, stop and package information.
+## Fields used
 
-The dataset is used to understand:
-- Delivery route characteristics.
-- Number of stops per route.
-- Vehicle capacity.
-- Package dimensions.
-- Planned package service times.
-- Availability and width of delivery time windows.
-- Delivery zones and stop types.
+| Field | Level | Used for |
+|---|---|---|
+| stops (type ≠ Station) | route | stops per route → orders per vehicle |
+| packages per stop | stop | demand per order |
+| dimensions (depth × height × width) | package | demand size → capacity units |
+| time_window start/end | package | share of orders with a window, window width, window position |
+| planned_service_time_seconds | package | service_time |
+| executor_capacity_cm3 | route | vehicle capacity, utilization |
+| departure_time_utc | route | to place windows relative to shift start |
 
-The original geographical coordinates are obfuscated. Therefore, they are not treated as actual Hyderabad delivery locations. The dataset is used to learn statistical demand characteristics, while Hyderabad locations are obtained from the project's road network.
+Fields **ignored on purpose**: lat/lng (obfuscated, no geography transfers), zone_id (Amazon's own zones, not ours), route_score (quality label, not demand).
 
-## 2. Route-Level Analysis
+## Results
 
-The route dataset contains 6,112 routes and 904,527 total stops, including station stops.
+| Statistic | p5 | p25 | median | p75 | p95 | mean |
+|---|---|---|---|---|---|---|
+| Stops per route | | | | | | |
+| Packages per stop | | | | | | |
+| Package volume (cm³) | | | | | | |
+| Time-window width (h) | | | | | | |
+| Service time per stop (s) | | | | | | |
+| Capacity utilization | | | | | | |
 
-| Metric | Value |
-|---|---:|
-| Total routes | 6,112 |
-| Total stops | 904,527 |
-| Dropoff stops | 898,415 |
-| Station stops | 6,112 |
-| Distinct zones | 8,963 |
-| Mean stops per route | 147.99 |
-| Median stops per route | 151 |
-| Minimum stops | 33 |
-| Maximum stops | 238 |
-| First quartile (Q1) | 129 |
-| Third quartile (Q3) | 170 |
+- Share of packages with a time window: ___ %
+- Share of stops with at least one windowed package: ___ %
+- Is service time per package or repeated per stop? ___ (check: compare `service_sum_s` vs `service_max_s`)
 
-The average number of dropoff stops per route is approximately 147.
+Plots: `stops_per_route.png`, `packages_per_stop.png`, `package_volume.png`, `tw_width.png`, `service_time.png`.
 
-### Route Score Distribution
+## How this becomes orders (input to D3)
+- Orders per scenario: 100–300 (D3); per vehicle ≈ sampled from stops-per-route, scaled to a 4-hour window (D4).
+- Demand = sampled packages per stop × sampled volumes → converted to abstract units.
+- Time windows: present with the measured probability; width and start offset sampled from the empirical quantiles.
+- Locations: graph nodes sampled from demand zones on **our** Hyderabad map (Week 2), not from Amazon coordinates.
 
-| Route Score | Number of Routes |
-|---|---:|
-| High | 2,718 |
-| Medium | 3,292 |
-| Low | 102 |
+## Limitations to state in the report
+- US data from 2018, five metro areas; Hyderabad demand may differ.
+- Coordinates are obfuscated, so only statistics transfer, not spatial patterns.
+- Priority tiers (1–3) do not exist in the data; we assign them synthetically (state the split).
 
-## 3. Vehicle Capacity Analysis
-
-Vehicle capacity is represented by `executor_capacity_cm3`.
-
-| Metric | Value (cm³) |
-|---|---:|
-| Mean | 3,607,177.98 |
-| Median | 3,313,071 |
-| Minimum | 3,114,853.25 |
-| Maximum | 4,247,527 |
-| Q1 | 3,313,071 |
-| Q3 | 4,247,527 |
-
-These values provide an initial reference for modelling vehicle capacity constraints.
-
-## 4. Package-Level Analysis
-
-A total of 1,457,175 packages were analysed.
-
-### Planned Service Time
-
-| Metric | Value (seconds) |
-|---|---:|
-| Mean | 68.24 |
-| Median | 53 |
-| Minimum | 0.7 |
-| Maximum | 8,007 |
-| Q1 | 36.5 |
-| Q3 | 78 |
-
-### Package Dimensions
-
-| Dimension | Mean (cm) | Median (cm) | Minimum (cm) | Maximum (cm) |
-|---|---:|---:|---:|---:|
-| Depth | 34.09 | 32.7 | 0.8 | 132.1 |
-| Height | 10.2 | 7.6 | 0 | 83.8 |
-| Width | 24.79 | 24.3 | 0.2 | 101.6 |
-
-The package dimension and service-time distributions will be used to generate realistic package attributes.
-
-Extreme values should be investigated before applying any filtering or clipping.
-
-## 5. Time-Window Analysis
-
-Time windows are represented by `start_time_utc` and `end_time_utc`.
-
-| Metric | Value |
-|---|---:|
-| Total packages | 1,457,175 |
-| Complete time windows | 113,993 |
-| Missing time windows | 1,343,182 |
-| Invalid time windows | 0 |
-| Complete time-window share | 7.82% |
-| Missing time-window share | 92.18% |
-
-### Time-Window Width
-
-| Metric | Value (hours) |
-|---|---:|
-| Mean | 9 |
-| Median | 8 |
-| Minimum | 3.5 |
-| Maximum | 23.98 |
-| Q1 | 7 |
-| Q3 | 8.5 |
-
-Most packages do not have explicit delivery time windows. The order generator must preserve this characteristic rather than assigning time windows to every order.
-
-## 6. Important Findings for R3
-
-1. The dataset contains 6,112 historical routes.
-2. The average route contains approximately 147 dropoff stops.
-3. Vehicle capacities vary and must be considered during feasibility checking.
-4. Package dimensions are important for calculating volume-based capacity requirements.
-5. Planned service time must be included in delivery scheduling.
-6. Only 7.82% of packages have complete time windows.
-7. Most packages have no explicit time-window restriction.
-8. The dataset contains 8,963 distinct delivery zones.
-9. Extreme service-time and dimension values should be investigated before filtering.
-10. Obfuscated coordinates cannot be interpreted as actual Hyderabad geography.
-
-## 7. Assumptions and Limitations
-
-- Amazon's geographical coordinates are obfuscated.
-- Amazon package and route statistics are used as demand-distribution references, not as direct Hyderabad delivery records.
-- Hyderabad delivery locations will be obtained from the project's road network.
-- Missing time windows will be represented as unrestricted time-window fields, subject to the project's scheduling rules.
-- Package volume can be estimated using depth × height × width.
-- Vehicle capacity and package volume will use consistent cubic-centimetre units.
-- Statistical distributions will be used to generate synthetic orders.
-
-## 8. Conclusion
-
-The dataset provides useful information about delivery demand, vehicle capacities, package dimensions, service times and time-window characteristics.
-
-These findings form the statistical foundation for R3's realistic order generator and Knowledge Representation and Reasoning module.
-
-The next stage is to develop the delivery ontology, define business rules and implement a rule-based feasibility engine.
+## Fallback (if download fails)
+Fit distributions to Solomon VRPTW instances and say so in the proposal/report.

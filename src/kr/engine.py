@@ -1,356 +1,85 @@
-
 """
-R3 - Forward Chaining Rule Engine
+R3 · Forward-chaining production-rule engine (written from scratch, no rule library).
 
-Implements:
-1. Working memory
-2. Rule conditions and actions
-3. Agenda
-4. Forward chaining
-5. Explanation trace
+Pieces:
+  WorkingMemory  facts = dicts with a "type" key; each fact gets an integer id
+  Rule           name, salience, match(wm) -> activations, act(wm, binding)
+  Agenda         all (rule, binding) pairs whose conditions hold now
+  Cycle          match -> pick highest-salience activation -> fire -> repeat until nothing new (quiescence)
+
+Conflict resolution: higher salience first; ties broken by rule order, then by recency of the facts
+(newer first). Refraction: an activation (rule, key) fires at most once, so the loop always ends.
+
+Every firing is written to the explanation trace, which is what feasible() returns.
 """
+from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
-from src.kr.rules import road_allowed
-from src.kr.rules import sort_orders_by_priority
+from typing import Any, Callable, Iterable
 
 
-# ==========================================
-# 1. RULE REPRESENTATION
-# ==========================================
+class WorkingMemory:
+    def __init__(self):
+        self._facts: dict[int, dict] = {}
+        self._next_id = 0
+
+    def assert_fact(self, ftype: str, **attrs) -> int:
+        fid = self._next_id
+        self._next_id += 1
+        self._facts[fid] = {"type": ftype, "_id": fid, **attrs}
+        return fid
+
+    def retract(self, fid: int) -> None:
+        self._facts.pop(fid, None)
+
+    def facts(self, ftype: str | None = None) -> list[dict]:
+        return [f for f in self._facts.values() if ftype is None or f["type"] == ftype]
+
+    def one(self, ftype: str) -> dict | None:
+        fs = self.facts(ftype)
+        return fs[0] if fs else None
+
+    def exists(self, ftype: str, **attrs) -> bool:
+        return any(all(f.get(k) == v for k, v in attrs.items()) for f in self.facts(ftype))
+
+
+@dataclass
+class Activation:
+    key: tuple          # identifies the binding (used for refraction)
+    binding: Any        # passed to the action
+    recency: int = 0    # max fact id involved; larger = newer
+
 
 @dataclass
 class Rule:
-    name: str
-    condition: Callable
-    action: Callable
-    priority: int = 1
+    name: str           # e.g. "R01"
+    description: str
+    salience: int
+    match: Callable[[WorkingMemory], Iterable[Activation]]
+    act: Callable[[WorkingMemory, Any], str]   # returns a one-line message for the trace
 
 
-# ==========================================
-# 2. WORKING MEMORY
-# ==========================================
+class Engine:
+    def __init__(self, rules: list[Rule], max_cycles: int = 10_000):
+        self.rules = rules
+        self.order = {r.name: i for i, r in enumerate(rules)}
+        self.max_cycles = max_cycles
 
-class WorkingMemory:
-    """Stores facts used by the rule engine."""
-
-    def __init__(self, initial_facts=None):
-        self.facts = dict(initial_facts or {})
-        self.trace = []
-
-    def get(self, key, default=None):
-        return self.facts.get(key, default)
-
-    def set(self, key, value):
-        self.facts[key] = value
-
-    def add_trace(self, message):
-        self.trace.append(message)
-
-
-# ==========================================
-# 3. RULE ENGINE
-# ==========================================
-
-class ForwardChainingEngine:
-
-    def __init__(self, rules):
-        self.rules = sorted(
-            rules,
-            key=lambda rule: rule.priority
-        )
-
-    def run(self, memory):
-        """
-        Repeatedly match and execute applicable rules.
-
-        Rules are fired once per execution.
-        """
-
-        fired = set()
-
-        while True:
-
-            # Build agenda from rules whose conditions match.
+    def run(self, wm: WorkingMemory) -> list[str]:
+        fired: set[tuple] = set()
+        trace: list[str] = []
+        for _ in range(self.max_cycles):
             agenda = [
-                rule for rule in self.rules
-                if rule.name not in fired
-                and rule.condition(memory)
+                (r, a)
+                for r in self.rules
+                for a in r.match(wm)
+                if (r.name, a.key) not in fired
             ]
-
             if not agenda:
-                break
-
-            # Select highest-priority rule.
-            rule = agenda[0]
-
-            memory.add_trace(
-                f"ACTIVATED: {rule.name}"
-            )
-
-            # Execute rule action.
-            rule.action(memory)
-
-            memory.add_trace(
-                f"EXECUTED: {rule.name}"
-            )
-
-            fired.add(rule.name)
-
-        return memory
-
-
-# ==========================================
-# 4. DELIVERY RULE DEFINITIONS
-# ==========================================
-
-def capacity_condition(memory):
-    return "capacity_ok" in memory.facts
-
-
-def capacity_action(memory):
-    if not memory.get("capacity_ok"):
-        memory.set("feasible", False)
-        memory.add_trace("REJECTED: Vehicle capacity exceeded.")
-    else:
-        memory.add_trace("PASSED: Vehicle capacity is sufficient.")
-
-
-def time_window_condition(memory):
-    return "time_window_ok" in memory.facts
-
-
-def time_window_action(memory):
-    if not memory.get("time_window_ok"):
-        memory.set("feasible", False)
-        memory.add_trace("REJECTED: Invalid time window.")
-    else:
-        memory.add_trace("PASSED: Time windows are valid.")
-
-
-def road_condition(memory):
-    return "road_allowed" in memory.facts
-
-
-def road_action(memory):
-    if not memory.get("road_allowed"):
-        memory.set("feasible", False)
-        memory.add_trace("REJECTED: Road access restricted.")
-    else:
-        memory.add_trace("PASSED: Road access permitted.")
-
-
-def shift_condition(memory):
-    return "shift_ok" in memory.facts
-
-
-def shift_action(memory):
-    if not memory.get("shift_ok"):
-        memory.set("feasible", False)
-        memory.add_trace("REJECTED: Maximum shift duration exceeded.")
-    else:
-        memory.add_trace("PASSED: Shift duration is valid.")
-
-
-# ==========================================
-# 5. RULE BASE
-# ==========================================
-
-DELIVERY_RULES = [
-
-    Rule(
-        name="CAPACITY_RULE",
-        condition=capacity_condition,
-        action=capacity_action,
-        priority=1
-    ),
-
-    Rule(
-        name="ROAD_ACCESS_RULE",
-        condition=road_condition,
-        action=road_action,
-        priority=2
-    ),
-
-    Rule(
-        name="TIME_WINDOW_RULE",
-        condition=time_window_condition,
-        action=time_window_action,
-        priority=3
-    ),
-
-    Rule(
-        name="SHIFT_LIMIT_RULE",
-        condition=shift_condition,
-        action=shift_action,
-        priority=4
-    )
-]
-
-
-# ==========================================
-# 6. PUBLIC EXECUTION FUNCTION
-# ==========================================
-
-def run_engine(facts):
-    """
-    Run the forward-chaining engine.
-
-    Parameters:
-        facts: Dictionary containing feasibility facts.
-
-    Returns:
-        Dictionary containing final facts and explanation trace.
-    """
-
-    initial_facts = dict(facts)
-    initial_facts.setdefault("feasible", True)
-
-    memory = WorkingMemory(initial_facts)
-
-    engine = ForwardChainingEngine(DELIVERY_RULES)
-
-    engine.run(memory)
-
-    return {
-        "feasible": memory.get("feasible"),
-        "facts": memory.facts,
-        "trace": memory.trace
-    }
-
-
-# ==========================================
-# 7. INTEGRATION WITH REAL R1 OBJECTS
-# ==========================================
-
-from src.kr.rules import evaluate_rules
-
-
-def run_feasibility_engine(vehicle, orders, edges=None):
-    # Arrange deliveries: High priority first
-    orders = sort_orders_by_priority(orders)
-    """
-    Connect R1 Vehicle and Order objects to the
-    forward-chaining engine.
-
-    Returns:
-        {
-            "feasible": bool,
-            "trace": list,
-            "facts": dict
-        }
-    """
-
-    # Evaluate actual delivery constraints.
-    _, rule_results = evaluate_rules(vehicle, orders)
-
-        # Check road access if route edges are provided
-    if edges is not None:
-        road_passed, road_trace = check_road_access(vehicle, edges)
-
-        rule_results.append({
-            "rule": "ROAD_ACCESS",
-            "passed": road_passed,
-            "message": (
-                "All roads are accessible"
-                if road_passed
-                else "Route contains a restricted road"
-            )
-        })
-
-    # Store the evaluated results in working memory.
-    memory = WorkingMemory({
-        "feasible": True,
-        "rule_results": rule_results,
-        "processed_rules": []
-    })
-
-    # Create an agenda rule for every evaluated constraint.
-    agenda_rules = []
-
-    for result in rule_results:
-
-        rule_name = result["rule"]
-
-        def condition(mem, name=rule_name):
-            return name not in mem.get("processed_rules", [])
-
-        def action(mem, current=result):
-            mem.get("processed_rules").append(current["rule"])
-
-            if not current["passed"]:
-                mem.set("feasible", False)
-
-                mem.add_trace(
-                    f"REJECTED: {current['rule']} - "
-                    f"{current['message']}"
-                )
-            else:
-                mem.add_trace(
-                    f"PASSED: {current['rule']} - "
-                    f"{current['message']}"
-                )
-
-        agenda_rules.append(
-            Rule(
-                name=rule_name,
-                condition=condition,
-                action=action
-            )
-        )
-
-    # Run forward chaining.
-    engine = ForwardChainingEngine(agenda_rules)
-    engine.run(memory)
-
-    return {
-        "feasible": memory.get("feasible"),
-        "facts": memory.facts,
-        "trace": memory.trace
-    }
-
-def check_road_access(vehicle, edges):
-    """
-    Check whether all roads in the proposed route are allowed.
-    Returns (passed, trace).
-    """
-    trace = []
-
-    for edge in edges:
-        passed = road_allowed(vehicle, edge)
-
-        trace.append({
-            "rule": "ROAD_ACCESS",
-            "edge": edge,
-            "passed": passed,
-            "message": (
-                "Road access allowed"
-                if passed
-                else "Road access restricted"
-            )
-        })
-
-        if not passed:
-            return False, trace
-
-    return True, trace
-
-
-
-if __name__ == "__main__":
-
-    example_facts = {
-        "capacity_ok": True,
-        "road_allowed": True,
-        "time_window_ok": True,
-        "shift_ok": True
-    }
-
-    result = run_engine(example_facts)
-
-    print("FEASIBLE:", result["feasible"])
-
-    print("\nEXPLANATION TRACE:")
-    for message in result["trace"]:
-        print("-", message)
+                return trace
+            rule, act = max(agenda, key=lambda ra: (ra[0].salience, -self.order[ra[0].name], ra[1].recency))
+            fired.add((rule.name, act.key))
+            msg = rule.act(wm, act.binding)
+            if msg:
+                trace.append(f"{rule.name}: {msg}")
+        raise RuntimeError("rule engine did not reach quiescence (check for rules that keep asserting new facts)")

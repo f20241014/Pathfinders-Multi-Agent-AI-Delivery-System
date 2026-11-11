@@ -1,127 +1,66 @@
-
 """
-R3 - Knowledge Representation
-Defines the ontology of the multi-agent delivery system.
+R3 · KR&R ontology: the entities the rules reason about.
 
-Main entities:
-Vehicle, Order, Road, Zone
-
-This file defines domain concepts and their relationships.
-Operational Vehicle and Order data structures are owned by R1.
+Order follows the frozen interface v1.0 (Section 4.1). Vehicle mirrors R1's dataclass; when R1's
+version is merged, import it from there and delete the copy here (field names are the same).
+All times are seconds from simulation start.
 """
+from __future__ import annotations
 
-# ==========================================
-# 1. ENTITY DEFINITIONS
-# ==========================================
+from dataclasses import dataclass, field
+from typing import Optional
 
-ONTOLOGY = {
+# Road classes as OSM `highway` tags. Large vehicles avoid narrow roads (rule R03).
+NARROW_ROAD_CLASSES = frozenset({"residential", "living_street", "service", "unclassified"})
+ALL_ROAD_CLASSES = frozenset(
+    {"motorway", "trunk", "primary", "secondary", "tertiary"} | NARROW_ROAD_CLASSES
+)
 
-    "Vehicle": {
-        "description": "A delivery vehicle responsible for transporting orders.",
-        "attributes": {
-            "vehicle_id": "Unique vehicle identifier",
-            "capacity_cm3": "Maximum package volume the vehicle can carry",
-            "current_load_cm3": "Total volume currently assigned",
-            "shift_limit_minutes": "Maximum permitted working duration",
-            "vehicle_type": "Type or category of vehicle"
-        }
-    },
-
-    "Order": {
-        "description": "A package or delivery request assigned to a vehicle.",
-        "attributes": {
-            "order_id": "Unique order identifier",
-            "volume_cm3": "Package volume",
-            "priority_tier": "Priority category of the order",
-            "time_window_start": "Earliest permitted delivery time",
-            "time_window_end": "Latest permitted delivery time",
-            "service_time_seconds": "Expected time required to complete delivery",
-            "zone_id": "Delivery zone associated with the order"
-        }
-    },
-
-    "Road": {
-        "description": "A road segment connecting two locations.",
-        "attributes": {
-            "road_id": "Unique road identifier",
-            "source_node": "Starting road-network node",
-            "destination_node": "Ending road-network node",
-            "road_class": "Classification of the road",
-            "restricted_vehicle_types": "Vehicle types prohibited on this road"
-        }
-    },
-
-    "Zone": {
-        "description": "A geographical delivery area containing delivery locations.",
-        "attributes": {
-            "zone_id": "Unique zone identifier",
-            "zone_type": "Classification of the delivery zone",
-            "restricted_vehicle_types": "Vehicle types restricted in this zone",
-            "priority_level": "Delivery importance of the zone"
-        }
-    }
-}
+PRIORITY_EXPRESS, PRIORITY_STANDARD, PRIORITY_ECONOMY = 1, 2, 3
 
 
-# ==========================================
-# 2. RELATIONSHIPS
-# ==========================================
+@dataclass
+class Order:
+    id: str
+    node: int
+    demand: int                       # abstract capacity units
+    priority: int                     # 1 express, 2 standard, 3 economy
+    tw_start: Optional[float] = None  # None = no time window
+    tw_end: Optional[float] = None
+    service_time: float = 0.0
+    release_time: float = 0.0
 
-RELATIONSHIPS = {
-
-    "Vehicle-Order": "A vehicle can be assigned multiple orders.",
-
-    "Order-Zone": "Each order belongs to a delivery zone.",
-
-    "Road-Zone": "A road segment may connect or pass through delivery zones.",
-
-    "Road-Vehicle": "A road may allow or restrict certain vehicle types.",
-
-    "Vehicle-Road": "A vehicle travels through multiple road segments.",
-
-    "Order-Priority": "Orders are classified according to priority tiers."
-}
+    @property
+    def has_tw(self) -> bool:
+        return self.tw_start is not None and self.tw_end is not None
 
 
-# ==========================================
-# 3. PRIORITY DEFINITIONS
-# ==========================================
+@dataclass
+class Vehicle:
+    id: str
+    depot_node: int
+    capacity: int
+    vehicle_class: str = "small"      # "small" | "large"
+    allowed_road_classes: frozenset = ALL_ROAD_CLASSES
+    shift_start: float = 0.0
+    shift_end: float = 4 * 3600.0     # D4: 4-hour window
+    current_node: Optional[int] = None
+    load: int = 0                     # units already on board and not yet delivered
+    remaining_route: list = field(default_factory=list)
 
-PRIORITY_TIERS = {
-    "HIGH": 1,
-    "MEDIUM": 2,
-    "LOW": 3
-}
-
-
-# ==========================================
-# 4. BASIC DOMAIN CONSTANTS
-# ==========================================
-
-TIME_UNIT = "minutes"
-DISTANCE_UNIT = "meters"
-VOLUME_UNIT = "cm3"
-SERVICE_TIME_UNIT = "seconds"
+    def __post_init__(self):
+        if self.current_node is None:
+            self.current_node = self.depot_node
 
 
-# ==========================================
-# 5. DISPLAY ONTOLOGY
-# ==========================================
+@dataclass(frozen=True)
+class Zone:
+    """A set of nodes with a time-dependent restriction, e.g. no large vehicles 08:00-10:00 (rule R06)."""
+    id: str
+    nodes: frozenset
+    banned_classes: frozenset = frozenset({"large"})
+    start: float = 0.0                # restricted interval [start, end) in sim seconds
+    end: float = 0.0
 
-def display_ontology():
-    """Print the entities and their attributes."""
-
-    for entity, details in ONTOLOGY.items():
-        print(f"\nENTITY: {entity}")
-        print(details["description"])
-
-        for attribute, description in details["attributes"].items():
-            print(f"  - {attribute}: {description}")
-
-    print("\nRELATIONSHIPS:")
-    for relation, description in RELATIONSHIPS.items():
-        print(f"  - {relation}: {description}")
-
-
-if __name__ == "__main__":
-    display_ontology()
+    def restricts(self, vehicle_class: str, t: float) -> bool:
+        return vehicle_class in self.banned_classes and self.start <= t < self.end
