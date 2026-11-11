@@ -6,6 +6,7 @@ __pycache__/
 # raw data stays out of the repo
 data/raw/
 cache/
+<<<<<<< HEAD
 # Raw and processed datasets
 data/raw/
 data/cleaned/
@@ -23,3 +24,6 @@ data/profile/
 nodes_fake.csv
 __pycache__/
 .pytest_cache/
+=======
+logs/
+>>>>>>> origin/main

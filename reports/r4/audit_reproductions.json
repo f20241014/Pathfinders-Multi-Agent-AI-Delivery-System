@@ -1,0 +1,19 @@
+{
+  "r5_capacity_case": {
+    "capacity": 2,
+    "maximum_simultaneous_occupancy": 2,
+    "expected_conflicts": 0,
+    "actual_conflicts": 1
+  },
+  "r5_budget_case": {
+    "winner": "a",
+    "initial_winner_credits": 1,
+    "price": 9.0,
+    "final_winner_credits": -8.0
+  },
+  "r7_current_world_integration": {
+    "exception": "KeyError",
+    "message": "'Edge (1, 2, 21600) not found in road graph.'"
+  },
+  "r3_csp_bytes": 0
+}

@@ -1,0 +1,6 @@
+{
+  "python": "3.12.10",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "ortools": "9.15.6755",
+  "config_sha256": "7701425bbcb66b41a7d4d09642312018b87e28b38dfab1f5e3ff4f7a6402a3dc"
+}
