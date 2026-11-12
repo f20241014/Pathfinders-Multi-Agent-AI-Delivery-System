@@ -153,7 +153,7 @@ def test_closure_off_route_changes_nothing(world, tmp_path):
     close_road_at(env, 6, 7, after_s=5)
     env.run(2000)
     assert rows(env, "order_delivered")[0]["t"] == START + 20.0
-    assert rows(env, "replan")[0]["payload"]["route_found"]
+    assert rows(env, "replan") == []        # W5: same route, so no replan row
 
 
 def test_multi_stop_vehicle_reroutes_after_first_stop(world, tmp_path):
