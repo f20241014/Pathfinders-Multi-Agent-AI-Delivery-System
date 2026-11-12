@@ -1,0 +1,83 @@
+{
+ "RouteID_a": {
+  "station_code": "DLA3",
+  "date_YYYY_MM_DD": "2018-07-27",
+  "departure_time_utc": "14:00:00",
+  "executor_capacity_cm3": 3313071.0,
+  "route_score": "High",
+  "stops": {
+   "S0": {
+    "lat": 1,
+    "lng": 1,
+    "type": "Station",
+    "zone_id": null
+   },
+   "A": {
+    "lat": 1,
+    "lng": 1,
+    "type": "Dropoff",
+    "zone_id": "Z-1.1A"
+   },
+   "B": {
+    "lat": 1,
+    "lng": 1,
+    "type": "Dropoff",
+    "zone_id": "Z-1.1A"
+   },
+   "C": {
+    "lat": 1,
+    "lng": 1,
+    "type": "Dropoff",
+    "zone_id": "Z-1.2B"
+   }
+  }
+ },
+ "RouteID_b": {
+  "station_code": "DSE4",
+  "date_YYYY_MM_DD": "2018-08-01",
+  "departure_time_utc": "15:30:00",
+  "executor_capacity_cm3": 4247527.0,
+  "route_score": "Medium",
+  "stops": {
+   "T0": {
+    "lat": 1,
+    "lng": 1,
+    "type": "Station",
+    "zone_id": null
+   },
+   "D": {
+    "lat": 1,
+    "lng": 1,
+    "type": "Dropoff",
+    "zone_id": "Z-2.1C"
+   },
+   "E": {
+    "lat": 1,
+    "lng": 1,
+    "type": "Dropoff",
+    "zone_id": "Z-2.1C"
+   }
+  }
+ },
+ "RouteID_c": {
+  "station_code": "DLA3",
+  "date_YYYY_MM_DD": "2018-07-28",
+  "departure_time_utc": "14:15:00",
+  "executor_capacity_cm3": 3313071.0,
+  "route_score": "Low",
+  "stops": {
+   "U0": {
+    "lat": 1,
+    "lng": 1,
+    "type": "Station",
+    "zone_id": null
+   },
+   "F": {
+    "lat": 1,
+    "lng": 1,
+    "type": "Dropoff",
+    "zone_id": "Z-3.1A"
+   }
+  }
+ }
+}

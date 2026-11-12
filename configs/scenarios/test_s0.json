@@ -1,0 +1,2011 @@
+{
+ "meta": {
+  "seed": 0,
+  "layout": "clustered",
+  "n_orders": 200,
+  "unit_cm3": 5741.924,
+  "source": "Amazon Last Mile 2021 statistics (CC BY-NC 4.0)"
+ },
+ "orders": [
+  {
+   "id": "O0000",
+   "node": 356,
+   "demand": 9,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 40.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0001",
+   "node": 468,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 70.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0002",
+   "node": 22,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 43.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0003",
+   "node": 160,
+   "demand": 25,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 72.0,
+   "release_time": 6730.421162609258
+  },
+  {
+   "id": "O0004",
+   "node": 393,
+   "demand": 10,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 68.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0005",
+   "node": 376,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 187.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0006",
+   "node": 440,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 83.0,
+   "release_time": 10174.821593470177
+  },
+  {
+   "id": "O0007",
+   "node": 383,
+   "demand": 11,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 85.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0008",
+   "node": 361,
+   "demand": 3,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 104.8,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0009",
+   "node": 135,
+   "demand": 3,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 44.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0010",
+   "node": 472,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 328.8,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0011",
+   "node": 231,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 168.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0012",
+   "node": 492,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": 0.0,
+   "tw_end": 14400,
+   "service_time": 126.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0013",
+   "node": 253,
+   "demand": 8,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 147.0,
+   "release_time": 8185.870825449423
+  },
+  {
+   "id": "O0014",
+   "node": 241,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 136.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0015",
+   "node": 389,
+   "demand": 4,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 126.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0016",
+   "node": 176,
+   "demand": 4,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 45.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0017",
+   "node": 221,
+   "demand": 5,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 136.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0018",
+   "node": 470,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 121.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0019",
+   "node": 455,
+   "demand": 4,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 198.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0020",
+   "node": 152,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 57.0,
+   "release_time": 9339.60559032836
+  },
+  {
+   "id": "O0021",
+   "node": 215,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 64.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0022",
+   "node": 101,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 40.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0023",
+   "node": 152,
+   "demand": 5,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 51.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0024",
+   "node": 478,
+   "demand": 6,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 30.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0025",
+   "node": 280,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 180.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0026",
+   "node": 256,
+   "demand": 2,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 46.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0027",
+   "node": 476,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 165.0,
+   "release_time": 7263.2876463021885
+  },
+  {
+   "id": "O0028",
+   "node": 348,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 30.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0029",
+   "node": 178,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 88.0,
+   "release_time": 4266.99045026605
+  },
+  {
+   "id": "O0030",
+   "node": 462,
+   "demand": 12,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 50.0,
+   "release_time": 759.5235385475552
+  },
+  {
+   "id": "O0031",
+   "node": 25,
+   "demand": 5,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 31.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0032",
+   "node": 330,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 67.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0033",
+   "node": 251,
+   "demand": 6,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 213.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0034",
+   "node": 411,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 34.0,
+   "release_time": 9017.872602750725
+  },
+  {
+   "id": "O0035",
+   "node": 231,
+   "demand": 4,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 55.0,
+   "release_time": 7650.922574669753
+  },
+  {
+   "id": "O0036",
+   "node": 294,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 71.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0037",
+   "node": 456,
+   "demand": 23,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 255.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0038",
+   "node": 432,
+   "demand": 4,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 110.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0039",
+   "node": 409,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 666.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0040",
+   "node": 389,
+   "demand": 9,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 104.0,
+   "release_time": 5142.603202743552
+  },
+  {
+   "id": "O0041",
+   "node": 476,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 86.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0042",
+   "node": 252,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 61.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0043",
+   "node": 317,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 176.10000000000002,
+   "release_time": 4230.087834102151
+  },
+  {
+   "id": "O0044",
+   "node": 389,
+   "demand": 6,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 189.0,
+   "release_time": 9319.859984698502
+  },
+  {
+   "id": "O0045",
+   "node": 443,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 234.9,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0046",
+   "node": 328,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 27.0,
+   "release_time": 5531.475504647538
+  },
+  {
+   "id": "O0047",
+   "node": 119,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 115.2,
+   "release_time": 6023.673892310109
+  },
+  {
+   "id": "O0048",
+   "node": 473,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 57.0,
+   "release_time": 2661.184465750536
+  },
+  {
+   "id": "O0049",
+   "node": 409,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 161.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0050",
+   "node": 60,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 168.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0051",
+   "node": 290,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 51.0,
+   "release_time": 193.22734568733284
+  },
+  {
+   "id": "O0052",
+   "node": 497,
+   "demand": 3,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 71.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0053",
+   "node": 364,
+   "demand": 5,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 101.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0054",
+   "node": 16,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 43.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0055",
+   "node": 352,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 147.89999999999998,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0056",
+   "node": 337,
+   "demand": 8,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 159.0,
+   "release_time": 4599.247395175433
+  },
+  {
+   "id": "O0057",
+   "node": 492,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 112.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0058",
+   "node": 267,
+   "demand": 3,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 93.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0059",
+   "node": 324,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 109.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0060",
+   "node": 198,
+   "demand": 10,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 220.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0061",
+   "node": 388,
+   "demand": 5,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 192.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0062",
+   "node": 346,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 55.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0063",
+   "node": 369,
+   "demand": 4,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 75.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0064",
+   "node": 444,
+   "demand": 12,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 69.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0065",
+   "node": 273,
+   "demand": 2,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 39.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0066",
+   "node": 437,
+   "demand": 3,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 175.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0067",
+   "node": 83,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 41.0,
+   "release_time": 811.4331046260631
+  },
+  {
+   "id": "O0068",
+   "node": 32,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 105.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0069",
+   "node": 198,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 366.9,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0070",
+   "node": 144,
+   "demand": 5,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 49.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0071",
+   "node": 300,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 40.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0072",
+   "node": 415,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": 0.0,
+   "tw_end": 14400,
+   "service_time": 42.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0073",
+   "node": 137,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 82.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0074",
+   "node": 423,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 131.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0075",
+   "node": 445,
+   "demand": 11,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 23.0,
+   "release_time": 148.3688730579687
+  },
+  {
+   "id": "O0076",
+   "node": 294,
+   "demand": 7,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 89.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0077",
+   "node": 97,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 278.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0078",
+   "node": 395,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 162.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0079",
+   "node": 56,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 77.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0080",
+   "node": 188,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 35.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0081",
+   "node": 152,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 81.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0082",
+   "node": 73,
+   "demand": 3,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 17.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0083",
+   "node": 17,
+   "demand": 3,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 56.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0084",
+   "node": 494,
+   "demand": 4,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 252.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0085",
+   "node": 49,
+   "demand": 6,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 57.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0086",
+   "node": 208,
+   "demand": 6,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 79.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0087",
+   "node": 267,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": 2211.2000000000003,
+   "tw_end": 14400,
+   "service_time": 169.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0088",
+   "node": 367,
+   "demand": 2,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 99.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0089",
+   "node": 5,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 47.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0090",
+   "node": 304,
+   "demand": 4,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 30.0,
+   "release_time": 1553.3129405259733
+  },
+  {
+   "id": "O0091",
+   "node": 209,
+   "demand": 9,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 63.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0092",
+   "node": 231,
+   "demand": 5,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 126.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0093",
+   "node": 52,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 146.10000000000002,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0094",
+   "node": 287,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 63.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0095",
+   "node": 214,
+   "demand": 7,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 156.8,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0096",
+   "node": 323,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": 0.0,
+   "tw_end": 14400,
+   "service_time": 56.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0097",
+   "node": 188,
+   "demand": 3,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 163.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0098",
+   "node": 200,
+   "demand": 6,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 29.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0099",
+   "node": 466,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 114.0,
+   "release_time": 7192.202093233426
+  },
+  {
+   "id": "O0100",
+   "node": 404,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 76.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0101",
+   "node": 58,
+   "demand": 7,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 19.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0102",
+   "node": 232,
+   "demand": 20,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 186.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0103",
+   "node": 468,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 268.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0104",
+   "node": 375,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 88.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0105",
+   "node": 429,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 120.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0106",
+   "node": 392,
+   "demand": 11,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 65.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0107",
+   "node": 104,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 46.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0108",
+   "node": 358,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 85.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0109",
+   "node": 370,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 35.0,
+   "release_time": 6110.151093018604
+  },
+  {
+   "id": "O0110",
+   "node": 36,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 78.0,
+   "release_time": 9158.06984533011
+  },
+  {
+   "id": "O0111",
+   "node": 395,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 150.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0112",
+   "node": 101,
+   "demand": 11,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 65.0,
+   "release_time": 10710.194958005992
+  },
+  {
+   "id": "O0113",
+   "node": 401,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 328.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0114",
+   "node": 293,
+   "demand": 5,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 43.0,
+   "release_time": 6589.182706746937
+  },
+  {
+   "id": "O0115",
+   "node": 213,
+   "demand": 6,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 31.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0116",
+   "node": 54,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 107.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0117",
+   "node": 54,
+   "demand": 4,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 173.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0118",
+   "node": 188,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 39.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0119",
+   "node": 369,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 66.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0120",
+   "node": 316,
+   "demand": 2,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 242.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0121",
+   "node": 160,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 107.1,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0122",
+   "node": 197,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 35.0,
+   "release_time": 1404.7613293149016
+  },
+  {
+   "id": "O0123",
+   "node": 215,
+   "demand": 3,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 90.0,
+   "release_time": 351.7813779977987
+  },
+  {
+   "id": "O0124",
+   "node": 9,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 145.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0125",
+   "node": 135,
+   "demand": 11,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 80.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0126",
+   "node": 430,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 38.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0127",
+   "node": 1,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 238.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0128",
+   "node": 304,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 71.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0129",
+   "node": 358,
+   "demand": 3,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 93.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0130",
+   "node": 2,
+   "demand": 3,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 140.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0131",
+   "node": 212,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 106.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0132",
+   "node": 258,
+   "demand": 3,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 90.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0133",
+   "node": 293,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 73.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0134",
+   "node": 330,
+   "demand": 5,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 172.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0135",
+   "node": 383,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 84.0,
+   "release_time": 4171.0063931309705
+  },
+  {
+   "id": "O0136",
+   "node": 362,
+   "demand": 3,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 118.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0137",
+   "node": 389,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 101.0,
+   "release_time": 5211.406317618068
+  },
+  {
+   "id": "O0138",
+   "node": 129,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 69.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0139",
+   "node": 335,
+   "demand": 2,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 46.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0140",
+   "node": 154,
+   "demand": 2,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 49.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0141",
+   "node": 470,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 39.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0142",
+   "node": 376,
+   "demand": 4,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 378.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0143",
+   "node": 444,
+   "demand": 4,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 45.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0144",
+   "node": 412,
+   "demand": 6,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 46.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0145",
+   "node": 438,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 86.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0146",
+   "node": 129,
+   "demand": 9,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 113.1,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0147",
+   "node": 383,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 61.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0148",
+   "node": 383,
+   "demand": 10,
+   "priority": 2,
+   "tw_start": 311.99999999999994,
+   "tw_end": 14400,
+   "service_time": 169.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0149",
+   "node": 415,
+   "demand": 10,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 167.29999999999998,
+   "release_time": 8939.83953417637
+  },
+  {
+   "id": "O0150",
+   "node": 351,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": 534.5374432913467,
+   "tw_end": 14400,
+   "service_time": 396.0,
+   "release_time": 534.5374432913467
+  },
+  {
+   "id": "O0151",
+   "node": 271,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 47.0,
+   "release_time": 1024.1725398188526
+  },
+  {
+   "id": "O0152",
+   "node": 2,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 34.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0153",
+   "node": 422,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 434.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0154",
+   "node": 434,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 30.0,
+   "release_time": 3313.9437385131873
+  },
+  {
+   "id": "O0155",
+   "node": 227,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 40.0,
+   "release_time": 3600.1088715216056
+  },
+  {
+   "id": "O0156",
+   "node": 339,
+   "demand": 10,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 179.2,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0157",
+   "node": 387,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 59.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0158",
+   "node": 140,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 237.2,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0159",
+   "node": 119,
+   "demand": 4,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 141.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0160",
+   "node": 401,
+   "demand": 3,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 82.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0161",
+   "node": 124,
+   "demand": 14,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 60.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0162",
+   "node": 47,
+   "demand": 3,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 65.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0163",
+   "node": 377,
+   "demand": 9,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 148.0,
+   "release_time": 1402.066600865103
+  },
+  {
+   "id": "O0164",
+   "node": 144,
+   "demand": 9,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 274.0,
+   "release_time": 1529.3052484897337
+  },
+  {
+   "id": "O0165",
+   "node": 260,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 39.0,
+   "release_time": 8969.965018511208
+  },
+  {
+   "id": "O0166",
+   "node": 263,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 342.9,
+   "release_time": 5341.465776245507
+  },
+  {
+   "id": "O0167",
+   "node": 242,
+   "demand": 4,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 32.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0168",
+   "node": 255,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 54.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0169",
+   "node": 473,
+   "demand": 2,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 125.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0170",
+   "node": 337,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 153.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0171",
+   "node": 369,
+   "demand": 12,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 52.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0172",
+   "node": 258,
+   "demand": 3,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 23.0,
+   "release_time": 1781.742005011299
+  },
+  {
+   "id": "O0173",
+   "node": 32,
+   "demand": 11,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 65.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0174",
+   "node": 348,
+   "demand": 3,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 51.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0175",
+   "node": 462,
+   "demand": 11,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 35.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0176",
+   "node": 364,
+   "demand": 2,
+   "priority": 3,
+   "tw_start": 229.5999999999999,
+   "tw_end": 14400,
+   "service_time": 35.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0177",
+   "node": 480,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 284.1,
+   "release_time": 5888.7373082678
+  },
+  {
+   "id": "O0178",
+   "node": 154,
+   "demand": 2,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 73.0,
+   "release_time": 5184.780506955104
+  },
+  {
+   "id": "O0179",
+   "node": 43,
+   "demand": 3,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 86.1,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0180",
+   "node": 481,
+   "demand": 6,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 48.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0181",
+   "node": 310,
+   "demand": 6,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 50.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0182",
+   "node": 233,
+   "demand": 7,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 136.0,
+   "release_time": 7622.865292535596
+  },
+  {
+   "id": "O0183",
+   "node": 431,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 53.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0184",
+   "node": 341,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 76.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0185",
+   "node": 12,
+   "demand": 11,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 131.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0186",
+   "node": 36,
+   "demand": 5,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 158.0,
+   "release_time": 2325.2715144654053
+  },
+  {
+   "id": "O0187",
+   "node": 56,
+   "demand": 3,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 40.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0188",
+   "node": 380,
+   "demand": 13,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 146.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0189",
+   "node": 323,
+   "demand": 4,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 60.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0190",
+   "node": 134,
+   "demand": 12,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 41.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0191",
+   "node": 367,
+   "demand": 2,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 80.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0192",
+   "node": 105,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 116.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0193",
+   "node": 301,
+   "demand": 8,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 36.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0194",
+   "node": 441,
+   "demand": 1,
+   "priority": 3,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 92.0,
+   "release_time": 0.0
+  },
+  {
+   "id": "O0195",
+   "node": 40,
+   "demand": 1,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 128.0,
+   "release_time": 5582.125991043835
+  },
+  {
+   "id": "O0196",
+   "node": 196,
+   "demand": 3,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 80.0,
+   "release_time": 5050.210209400797
+  },
+  {
+   "id": "O0197",
+   "node": 69,
+   "demand": 1,
+   "priority": 1,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 56.0,
+   "release_time": 1626.8174483277942
+  },
+  {
+   "id": "O0198",
+   "node": 133,
+   "demand": 5,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 99.0,
+   "release_time": 440.9380950429205
+  },
+  {
+   "id": "O0199",
+   "node": 377,
+   "demand": 3,
+   "priority": 2,
+   "tw_start": null,
+   "tw_end": null,
+   "service_time": 20.0,
+   "release_time": 0.0
+  }
+ ]
+}
