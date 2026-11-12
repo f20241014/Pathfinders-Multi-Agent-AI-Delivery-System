@@ -274,3 +274,69 @@ Tests (`tests/test_agent_planner.py`): closure on the path reroutes; no path han
 mode sends zero negotiation messages even with a hook given; every replan logs CPU; full mode calls the hook after
 each replan; the runtime toggle stops it; R1's own disruption generator on the real map with every replan checked
 against A\*.
+
+## Hysteresis, unreachable stops, R5's trigger after every replan (R7, Week 5)
+Code: `src/sim/agent_planner.py` (R7) and `src/sim/coordination_hook.py` (R7's glue to R5's `src/coordination`,
+R5's code unchanged). Tests: `tests/test_agent_planner_w5.py` (23).
+
+**Hysteresis.** After a cost change, D\* Lite's best path is compared with the rest of the old route, both costed
+with what the planner holds now. The vehicle switches only if
+`old_cost - new_cost >= max(min_gain_s, min_gain_frac x old_cost)`; a blocked old route (inf) always switches.
+Defaults `MIN_GAIN_S = 10 s`, `MIN_GAIN_FRAC = 0.05`, to be fixed on pilot seeds and then frozen (D12);
+`min_gain_s=0, min_gain_frac=0` gives the Week 4 behaviour. A kept route still gets new ETAs and logs a
+`replan_kept` row (`gain_s`, `cpu_seconds`). If the best path is unchanged, nothing is logged (Week 4 logged a
+`replan` row then).
+Sanity run, not the experiment (small map, 8 vehicles x 4 stops, R1's generator at 600/h, 1 h, 6 seeds,
+independent mode): route switches 181 without hysteresis vs 142 with the defaults (-22%); 186 vs 188 orders
+delivered; last delivery the same on 4 seeds, +11 s on one, later on the seed that delivered 2 more.
+
+**Unreachable stops** (`AgentPlanner(unreachable="fail")`, default). If a closure cuts a stop off:
+1. a `replan` row with `route_found: false` (as in Week 4);
+2. the vehicle's undelivered orders at the cut-off stops are offered to `reassign(vehicle_id, orders, t)` (R4's
+   hook, when it exists; returns the orders it took); the rest are failed through R1's `_fail` with the new
+   reason `unreachable` and removed from the vehicle's pending list (so they are not failed again at route end);
+3. a `stop_unreachable` row `{"stops", "failed", "reassigned"}`;
+4. a fresh plan through the stops still reachable, logged as a `replan` row with trigger `unreachable`. If dropping
+   a stop leaves the next one cut off too (it was only reachable through it), that one is dropped as well.
+`unreachable="wait"` keeps Week 4: the old route is kept and R1's wait loop waits for the road to reopen.
+Found in testing: R1's closure guard checks each pending stop from where the vehicle is, not from the stop
+before it, so a closure can still cut a stop off in the planned order (seed 1 of the real-map test). A better
+answer than failing would be to visit the stops in another order; that is allocation (R4), so the `reassign`
+hook is the place for it.
+
+**R5's trigger after every local replan** (full mode, no double replans). `AgentPlanner.on_event` now works in
+two passes: (1) every agent replans once for the disruption; (2) the hook runs once per vehicle that switched
+route, so R5 sees everyone's new routes. `TriggerCoordination(trigger)` is that hook:
+```python
+from src.coordination.trigger import ThresholdTrigger
+from src.sim.coordination_hook import TriggerCoordination
+planner = AgentPlanner(env, mode="full", heuristic=make_heuristic(world.graph()),
+                       coordination=TriggerCoordination(ThresholdTrigger(tau=120.0), rate_limit_s=60.0))
+```
+- Routes (nodes + planned ETAs, from where each vehicle is now) become R5's `VehicleRoute`; conflicts come from
+  R5's `prepare_occupancies` + `detect_conflicts`; only conflicts of the vehicle that replanned are looked at.
+- The same conflict (road + vehicles) is not negotiated again within `rate_limit_s`.
+- If `trigger.should_negotiate(...)` fires, R5's Vickrey auction runs. Bid = priority weight (highest priority of the
+  vehicle's undelivered orders) x min(detour extra time, waiting time), where the detour cost comes from the
+  vehicle's own D\* Lite (`ReplanningAgent.detour_extra`, planner left unchanged) and waiting = the overlap.
+- A loser whose detour costs no more than waiting detours: `AgentPlanner.yield_road` keeps it off that road until
+  the overlap ends and replans once (`replan` row, trigger `negotiation_yield`). That replan never calls the hook
+  again. Otherwise the loser should wait; R1's simulator cannot hold a vehicle back yet, so this is only logged.
+- Messages are counted with R5's `MessageCounter` (3 per vehicle per auction, D7) and logged as
+  `negotiation_request` / `negotiation_response` (one each per vehicle, `count: 1`) and one `negotiation_result`
+  (`count` = vehicles, `edge`, `vehicles`, `winner`, `price`, `ttc`, `actions`), the contract in
+  `docs/multipane_viz.md`.
+
+New log rows to add to `docs/log_schema.md` (with R1/R8): `replan_kept`, `stop_unreachable`, the
+`negotiation_*` rows, `order_failed` reason `unreachable`, and in `replan`: `gain_s` and the triggers
+`unreachable` and `negotiation_yield`. `replan_summary` adds `replans_kept`, `yields`, `failed_unreachable`,
+`reassigned`, `min_gain_s`, `min_gain_frac`.
+
+Checked by tests: hysteresis keeps a route for a 5 s gain, switches for 40 s, always leaves a closed road, and
+stops the flip-flop (12 alternating small spikes: 6+ switches without, 0 with); a cut-off order is failed once and
+the other stop delivered; R4's hook takes it instead; cascading drops; the trigger fires, the auction runs, the
+loser detours (or waits when the detour is longer), NeverTrigger and a small tau send nothing, rate limit; on the
+real map with R1's generator at 600/h (3 seeds, 8 vehicles, full mode): the hook runs exactly once per local replan
+and never for a negotiation detour, each vehicle replans at most once per disruption, message counts add up, and
+auctions and detours really happen. Bugs injected by hand (hook called after a detour, hysteresis off, order left
+pending, no cascade, reassign ignored, no rate limit, trigger ignored, loser never detours, flat bids) are caught.
