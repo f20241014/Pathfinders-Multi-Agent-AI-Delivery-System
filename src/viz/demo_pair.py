@@ -1,15 +1,19 @@
 """Two demo runs for the side-by-side viewer (R2, Week 5). NOT the project's experiment.
 
-    python -m src.viz.demo_pair [--config configs/viz_demo.yaml] [--rate 120]
+    python -m src.viz.demo_pair [--config configs/viz_demo.yaml] [--rate 120] [--prefix pair]
 
 This is a demo of the viewer (src/viz/multipane.py), nothing more. It runs the same
 config, same seed and same disruption rate twice:
 
-  (a) logs/pair_noreplan.jsonl     R1's simulator alone, no planner. Mode label in the
-                                   log: "no_replanning" (vehicles wait at closed roads).
-  (b) logs/pair_independent.jsonl  the same scenario with R7's AgentPlanner(mode=
-                                   "independent") attached as in the "For R1's mode
-                                   switch" snippet of src/search/README.md.
+  (a) logs/<prefix>_noreplan.jsonl     R1's simulator alone, no planner. Mode label in
+                                       the log: "no_replanning" (vehicles wait at closed
+                                       roads).
+  (b) logs/<prefix>_independent.jsonl  the same scenario with R7's AgentPlanner(mode=
+                                       "independent") attached as in the "For R1's mode
+                                       switch" snippet of src/search/README.md.
+
+--prefix (default "pair") names both files and both run_ids, so a second pair (for
+example the 20-vehicle config, --prefix pair20) does not overwrite the first.
 
 The default rate, 120 disruptions per hour, is a STRESS setting chosen so the panes show
 something (closures, waits, replans) within a few minutes. It is not an experiment rate;
@@ -41,10 +45,11 @@ from src.sim.run import assign_orders, build_order, build_vehicle
 from src.sim.world import DEFAULT_MAP_PATH, World
 
 DEFAULT_RATE = 120.0
+DEFAULT_PREFIX = "pair"
 RUNS = (
-    # (run_id / file name, mode label in the log, attach R7's planner?)
-    ("pair_noreplan", "no_replanning", False),
-    ("pair_independent", "independent", True),
+    # (run_id / file name suffix after "<prefix>_", mode label in the log, R7's planner?)
+    ("noreplan", "no_replanning", False),
+    ("independent", "independent", True),
 )
 
 
@@ -115,6 +120,9 @@ def main(argv=None) -> None:
     parser.add_argument("--rate", type=float, default=DEFAULT_RATE,
                         help="disruptions per hour (default 120, a stress setting)")
     parser.add_argument("--log-dir", default="logs")
+    parser.add_argument("--prefix", default=DEFAULT_PREFIX,
+                        help='file/run_id prefix: logs/<prefix>_noreplan.jsonl etc. '
+                             '(default "pair")')
     args = parser.parse_args(argv)
 
     with open(args.config, "r", encoding="utf-8") as f:
@@ -125,18 +133,19 @@ def main(argv=None) -> None:
     print(f"DEMO of the viewer, not an experiment. config {args.config}, "
           f"seed {config.get('seed')}, rate {args.rate:g}/h (stress setting)")
     summaries = {}
-    for run_id, mode, with_planner in RUNS:
+    run_ids = [f"{args.prefix}_{suffix}" for suffix, _, _ in RUNS]
+    for run_id, (_, mode, with_planner) in zip(run_ids, RUNS):
         t0 = time.perf_counter()
         path = run_one(config, run_id, mode, with_planner, args.rate, log_dir)
         s = summarize(path)
         summaries[run_id] = s
-        print(f"{run_id:17s} mode={mode:14s} delivered {s['delivered']:3d}  "
+        print(f"{run_id:19s} mode={mode:14s} delivered {s['delivered']:3d}  "
               f"failed {s['failed']:3d}  blocked_wait {s['blocked_wait']:4d}  "
               f"replan {s['replan']:5d}  disruptions {s['disruptions']:4d}  "
               f"last order resolved {_clock(s['finish_t'])}  "
               f"({time.perf_counter() - t0:.1f} s wall) -> {path}")
 
-    a, b = (_disruption_keys(summaries[r[0]]["rows"]) for r in RUNS)
+    a, b = (_disruption_keys(summaries[r]["rows"]) for r in run_ids)
     same = 0
     for x, y in zip(a, b):
         if x != y:
