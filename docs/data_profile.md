@@ -10,6 +10,25 @@ Owner: R3 · Fill the numbers from `data/profile/summary.json` after running `sr
 - Files **not** used: `travel_times.json` (largest file; we use our own OSM travel times), `actual_sequences.json`, `invalid_sequence_scores.json`.
 - Download size of what we used: ___ MB · Routes profiled: ___ (all / subset of ___)
 
+## How to get the data (run from the repo root)
+
+1. **Download** the two files we use into `data/raw/` (both are git-ignored):
+   ```
+   mkdir data/raw
+   curl -L -o data/raw/route_data.json   https://amazon-last-mile-challenges.s3.amazonaws.com/almrrc2021/almrrc2021-data-training/model_build_inputs/route_data.json
+   curl -L -o data/raw/package_data.json https://amazon-last-mile-challenges.s3.amazonaws.com/almrrc2021/almrrc2021-data-training/model_build_inputs/package_data.json
+   ```
+   On Windows PowerShell write `curl.exe`, not `curl`. Skip `travel_times.json`.
+2. **Clean** the package file: `python scripts/clean_json.py`
+   reads `data/raw/package_data.json`, replaces the bare `NaN` values (not valid JSON) with `null`
+   and writes `data/cleaned/package_data.json`.
+3. **Profile**: `python -m src.data.profile_amazon --max-routes 500` (drop `--max-routes` for the full run).
+   Reads `data/raw/route_data.json` and streams `data/cleaned/package_data.json` with `ijson`,
+   writes CSVs, `summary.json` and plots to `data/profile/`.
+
+Tests: `tests/test_data_pipeline.py` runs all three steps on the small sample in
+`tests/fixtures/amazon_sample/` every time; its real-data tests skip when the files above are missing.
+
 ## Fields used
 
 | Field | Level | Used for |

@@ -1,0 +1,137 @@
+{
+ "RouteID_a": {
+  "A": {
+   "P1": {
+    "scan_status": "DELIVERED",
+    "time_window": {
+     "start_time_utc": "2018-07-27 16:00:00",
+     "end_time_utc": "2018-07-27 19:00:00"
+    },
+    "planned_service_time_seconds": 59.0,
+    "dimensions": {
+     "depth_cm": 30,
+     "height_cm": 20,
+     "width_cm": 10
+    }
+   },
+   "P2": {
+    "scan_status": "DELIVERED",
+    "time_window": {
+     "start_time_utc": NaN,
+     "end_time_utc": NaN
+    },
+    "planned_service_time_seconds": 59.0,
+    "dimensions": {
+     "depth_cm": 20,
+     "height_cm": 10,
+     "width_cm": 10
+    }
+   }
+  },
+  "B": {
+   "P3": {
+    "scan_status": "DELIVERED",
+    "time_window": {
+     "start_time_utc": NaN,
+     "end_time_utc": NaN
+    },
+    "planned_service_time_seconds": 120.0,
+    "dimensions": {
+     "depth_cm": 40,
+     "height_cm": 30,
+     "width_cm": 20
+    }
+   }
+  },
+  "C": {
+   "P4": {
+    "scan_status": "DELIVERED",
+    "time_window": {
+     "start_time_utc": NaN,
+     "end_time_utc": NaN
+    },
+    "planned_service_time_seconds": 30.0,
+    "dimensions": {
+     "depth_cm": 10,
+     "height_cm": 10,
+     "width_cm": 5
+    }
+   },
+   "P5": {
+    "scan_status": "DELIVERED",
+    "time_window": {
+     "start_time_utc": NaN,
+     "end_time_utc": NaN
+    },
+    "planned_service_time_seconds": 30.0,
+    "dimensions": {
+     "depth_cm": 25,
+     "height_cm": 20,
+     "width_cm": 15
+    }
+   },
+   "P6": {
+    "scan_status": "DELIVERED",
+    "time_window": {
+     "start_time_utc": NaN,
+     "end_time_utc": NaN
+    },
+    "planned_service_time_seconds": 30.0,
+    "dimensions": {
+     "depth_cm": 30,
+     "height_cm": 30,
+     "width_cm": 30
+    }
+   }
+  }
+ },
+ "RouteID_b": {
+  "D": {
+   "P7": {
+    "scan_status": "DELIVERED",
+    "time_window": {
+     "start_time_utc": "2018-08-01 17:00:00",
+     "end_time_utc": "2018-08-01 21:00:00"
+    },
+    "planned_service_time_seconds": 200.0,
+    "dimensions": {
+     "depth_cm": 50,
+     "height_cm": 40,
+     "width_cm": 30
+    }
+   }
+  },
+  "E": {
+   "P8": {
+    "scan_status": "DELIVERED",
+    "time_window": {
+     "start_time_utc": NaN,
+     "end_time_utc": NaN
+    },
+    "planned_service_time_seconds": 45.0,
+    "dimensions": {
+     "depth_cm": 15,
+     "height_cm": 15,
+     "width_cm": 15
+    }
+   }
+  }
+ },
+ "RouteID_c": {
+  "F": {
+   "P9": {
+    "scan_status": "DELIVERED",
+    "time_window": {
+     "start_time_utc": NaN,
+     "end_time_utc": NaN
+    },
+    "planned_service_time_seconds": 90.0,
+    "dimensions": {
+     "depth_cm": 35,
+     "height_cm": 25,
+     "width_cm": 10
+    }
+   }
+  }
+ }
+}
