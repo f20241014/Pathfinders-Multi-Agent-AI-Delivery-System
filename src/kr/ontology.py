@@ -7,7 +7,8 @@ Units (docs/kr_ontology_rules.md, "Units"; proposed to R1 for docs/DECISIONS.md)
     release_time, shift_end     seconds since midnight; the simulated period is 06:00-10:00
                                 (21600-36000 s, D4)
     service_time                seconds
-    no time window              tw_start = tw_end = None (one marker everywhere)
+    no time window              tw_start = 0.0, tw_end = 86400.0 (R1's Order defaults);
+                                tw_of() returns None for exactly that pair (and for None)
 
 Order is R1's src.sim.models.Order (no copy). Vehicle is R1's Vehicle plus the two attributes only
 the rules need: vehicle_class (KR-3, KR-6) and shift_end (KR-10). Rules read every object
@@ -32,6 +33,9 @@ ALL_ROAD_CLASSES = frozenset(
 PRIORITY_EXPRESS, PRIORITY_STANDARD, PRIORITY_ECONOMY = 1, 2, 3
 SIM_START_S = 6 * 3600.0  # 06:00 (D4)
 SIM_END_S = 10 * 3600.0  # 10:00 (D4)
+# "No time window" = R1's Order defaults, so R1's simulator can load every order (never None).
+NO_TW_START = 0.0
+NO_TW_END = 86400.0
 
 
 @dataclass
@@ -66,9 +70,16 @@ class Zone:
 
 # ------------------------------------------------------------------ accessors
 def tw_of(order):
-    """(tw_start, tw_end) or None when the order has no time window."""
+    """(tw_start, tw_end), or None when the order has no time window.
+
+    No window = R1's defaults (0.0, 86400.0), exactly that pair. None is also read as "no window"
+    so older objects still work, but the generator never writes None.
+    """
     s, e = getattr(order, "tw_start", None), getattr(order, "tw_end", None)
-    return None if s is None or e is None else (float(s), float(e))
+    if s is None or e is None:
+        return None
+    s, e = float(s), float(e)
+    return None if (s, e) == (NO_TW_START, NO_TW_END) else (s, e)
 
 
 def shift_end_of(vehicle) -> float:
