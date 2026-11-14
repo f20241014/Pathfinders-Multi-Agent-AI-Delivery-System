@@ -9,6 +9,7 @@ import random
 import shutil
 import subprocess
 import sys
+from dataclasses import asdict
 from pathlib import Path
 
 import pandas as pd
@@ -16,7 +17,8 @@ import pytest
 
 from src.data.orders_from_amazon import Empirical, OrderSampler, order_summary
 from src.data.profile_amazon import profile, write_outputs
-from src.kr.ontology import SIM_END_S, SIM_START_S, tw_of
+from src.kr.ontology import NO_TW_END, NO_TW_START, SIM_END_S, SIM_START_S, tw_of
+from src.sim.run import build_order
 
 ROOT = Path(__file__).resolve().parents[1]
 SAMPLE = ROOT / "tests" / "fixtures" / "amazon_sample"
@@ -85,7 +87,7 @@ def test_generator_runs_on_sample(sample_sampler):
         assert SIM_START_S <= o.release_time <= SIM_END_S
         tw = tw_of(o)
         assert tw is None or (o.release_time <= tw[0] < tw[1] <= SIM_END_S)
-        assert (o.tw_start is None) == (o.tw_end is None)  # one marker for "no window"
+        assert tw is not None or (o.tw_start, o.tw_end) == (NO_TW_START, NO_TW_END)
 
 
 def test_generate_order_single(sample_sampler):
@@ -104,6 +106,35 @@ def test_generator_uses_local_rng(sample_sampler):
     sample_sampler.generate(20, seed=3)
     assert random.random() == before  # global random state untouched
     assert sample_sampler.generate(20, seed=3) == sample_sampler.generate(20, seed=3)
+
+
+def test_orders_load_in_r1_after_json_round_trip(sample_sampler):
+    """30 orders -> asdict -> JSON -> R1's build_order: nothing None, R1's window checks run."""
+    orders = sample_sampler.generate(30, seed=0)
+    assert any(tw_of(o) is None for o in orders) and any(tw_of(o) for o in orders)
+    loaded = [build_order(d) for d in json.loads(json.dumps([asdict(o) for o in orders]))]
+    assert loaded == orders
+    for o in loaded:
+        assert all(v is not None for v in asdict(o).values()), o.id
+        # the exact comparisons src/sim/environment.py makes (they raised TypeError on None)
+        assert isinstance(max(o.tw_start, o.release_time) > o.tw_end, bool)
+        assert isinstance(SIM_START_S > o.tw_end, bool)
+
+
+def test_export_nodes_matches_the_simulators_graph(tmp_path):
+    from src.world.graph_loader import load_road_graph
+
+    out = tmp_path / "nodes.csv"
+    res = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "export_nodes.py"), "--graph",
+         "secunderabad_small", "--out", str(out)],
+        cwd=ROOT, capture_output=True, text=True, check=True,
+    )
+    nodes = pd.read_csv(out)
+    G = load_road_graph("secunderabad_small")
+    assert list(nodes.columns) == ["node", "x", "y"]
+    assert set(nodes["node"]) == set(G.nodes) and f"wrote {len(nodes)} nodes" in res.stdout
+    assert nodes[["x", "y"]].notna().all().all()
 
 
 @needs_real_data

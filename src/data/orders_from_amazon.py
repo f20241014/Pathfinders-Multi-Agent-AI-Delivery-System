@@ -7,10 +7,13 @@ distributions written by src/data/profile_amazon.py and place orders on graph no
     python -m src.data.orders_from_amazon --profile-dir data/profile --nodes data/map/nodes.csv \
         --n-orders 200 --layout clustered --seed 0 --out configs/orders/medium_clustered_s0.json
 
-nodes.csv needs columns node, x, y (from R2's graph: ox.graph_to_gdfs(G, edges=False)).
+nodes.csv needs columns node, x, y. Write it from R2's map with:
+    python scripts/export_nodes.py
 
 Orders are R1's src.sim.models.Order, in the units of docs/kr_ontology_rules.md: demand in capacity
-units, all times in seconds since midnight inside 06:00-10:00, no time window = None.
+units, all times in seconds since midnight inside 06:00-10:00. An order without a time window
+gets R1's defaults tw_start = 0.0, tw_end = 86400.0 (never None, so R1's simulator can load it);
+tw_of() reads exactly that pair as "no window".
 
 What comes from the data vs our assumptions (put this table in the report):
     data        packages per stop, package volume, share of stops with a time window, window width,
@@ -33,7 +36,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.kr.ontology import SIM_END_S, SIM_START_S, Order, tw_of
+from src.kr.ontology import NO_TW_END, NO_TW_START, SIM_END_S, SIM_START_S, Order, tw_of
 
 LAYOUTS = ("uniform", "clustered", "hotspot")
 PRIORITY_SPLIT = (0.2, 0.5, 0.3)  # ASSUMPTION, see module docstring
@@ -129,7 +132,7 @@ class OrderSampler:
         demand = float(max(1, math.ceil(vol / emp.unit_cm3)))
         priority = rng.choices((1, 2, 3), weights=PRIORITY_SPLIT)[0]
 
-        tw_start = tw_end = None
+        tw_start, tw_end = NO_TW_START, NO_TW_END  # no window (R1's defaults)
         if emp.tw_width_h and rng.random() < emp.p_tw:
             width = max(self.min_w, float(rng.choice(emp.tw_width_h)) * 3600)
             offset_h = float(rng.choice(emp.tw_offset_h)) if emp.tw_offset_h else 0.0
