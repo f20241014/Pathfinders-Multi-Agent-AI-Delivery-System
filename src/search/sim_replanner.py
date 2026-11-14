@@ -72,6 +72,8 @@ class VehicleReplanner:
                  order_ids=None):
         self.world = world
         self.order_ids = dict(zip(stops, order_ids)) if order_ids else {}
+        self.stops = list(stops)
+        self.heuristic = heuristic
         self.planner = MultiStopPlanner(
             world_adjacency(world, t_seconds), start, stops, heuristic)
         # Roads with a closure or spike: their cost can change again when it
@@ -79,6 +81,9 @@ class VehicleReplanner:
         self.watched = set()
         for u, v, _ in list(world.closures) + list(world.spikes):
             self.watched.add((u, v))
+        # Roads this vehicle agreed to keep off until a time (it lost a
+        # negotiation, Week 5): (u, v) -> until t. They cost inf until then.
+        self.avoid = {}
         self.replans = 0
 
     @property
@@ -94,11 +99,20 @@ class VehicleReplanner:
         for u, v in (self.watched if edges is None else edges):
             if not self.planner.legs:
                 break
-            cost = world_cost(self.world, u, v, t_seconds)
+            cost = self.cost(u, v, t_seconds)
             if cost != self.planner.edge_cost(u, v):
                 self.planner.update_edge_cost(u, v, cost)
                 changed += 1
         return changed
+
+    def cost(self, u, v, t_seconds):
+        """World cost (D10), or inf while this vehicle is keeping off u -> v."""
+        until = self.avoid.get((u, v))
+        if until is not None:
+            if t_seconds < until:
+                return INF
+            del self.avoid[(u, v)]
+        return world_cost(self.world, u, v, t_seconds)
 
     def road_changed(self, u, v, t_seconds):
         """A closure or spike started on u -> v (from the event feed)."""
@@ -114,10 +128,25 @@ class VehicleReplanner:
         self.replans += 1
         return self.planner.path()
 
-    def to_route(self, t_seconds):
-        """R1's Route: nodes, planned ETA at each node, order id or None."""
+    def path_cost_of(self, nodes):
+        """Cost of a node path with the costs the planner holds now."""
+        if not self.planner.legs:
+            return 0.0
+        graph = self.planner.legs[0].graph
+        total = 0.0
+        for a, b in zip(nodes, nodes[1:]):
+            total += graph.get(a, {}).get(b, INF)
+        return total
+
+    def to_route(self, t_seconds, nodes=None):
+        """R1's Route: nodes, planned ETA at each node, order id or None.
+
+        nodes defaults to the planner's best path; pass a path to get the
+        ETAs of another route through the same stops (hysteresis, Week 5).
+        """
         from src.sim.interfaces import Route
-        nodes = self.path()
+        if nodes is None:
+            nodes = self.path()
         times, order_ids = [], []
         t = t_seconds
         goals = list(self.planner.remaining_stops)

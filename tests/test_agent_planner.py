@@ -213,7 +213,7 @@ def test_trigger_toggle_at_run_time_stops_coordination(tmp_path):
     calls = []
     env, planner, summary = run_scenario(
         tmp_path, "full", hook=counting_hook(calls), toggle_off_at=8,
-        closures=((1, 2, 5), (7, 8, 12)))
+        closures=((1, 2, 5), (4, 5, 12)))
     toggles = rows(env, "trigger_toggle")
     assert toggles and toggles[0]["payload"]["trigger_enabled"] is False
     assert summary["replans"] >= 2
@@ -226,7 +226,9 @@ def test_no_path_is_handled_without_crashing(tmp_path):
         tmp_path, "independent", closures=((1, 2, 5), (5, 2, 5)))
     replans = [r for r in rows(env, "replan") if r["agent_id"] == "V1"]
     assert any(not r["payload"]["route_found"] for r in replans)
-    assert summary["unreachable_stops"].get("V1") == [2]
+    # W5: the cut-off order is failed and the stop dropped (see test_agent_planner_w5)
+    assert summary["failed_unreachable"] == ["o1"]
+    assert summary["unreachable_stops"] == {}
     assert rows(env, "sim_complete")                     # the run finished
 
 
