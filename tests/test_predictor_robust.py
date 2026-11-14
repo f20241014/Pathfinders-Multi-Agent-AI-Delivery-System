@@ -1,9 +1,17 @@
 """R6 robustness tests for the predictor and traffic model."""
+import os
+
 import numpy as np
 import pytest
 
-from src.prediction.predictor import CACHE_STEPS, Predictor
-from src.world.traffic_model import TrafficModel
+pytest.importorskip("torch")
+pytestmark = pytest.mark.skipif(
+    not os.path.exists("data/raw/metr-la.h5"),
+    reason="METR-LA data is git-ignored; run locally",
+)
+
+from src.prediction.predictor import CACHE_STEPS, Predictor  # noqa: E402
+from src.world.traffic_model import TrafficModel  # noqa: E402
 
 
 @pytest.fixture(scope="module")
