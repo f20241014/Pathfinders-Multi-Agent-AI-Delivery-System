@@ -5,6 +5,9 @@
 - `dijkstra.py`: Dijkstra from scratch with `heapq`, plus the shared `SearchResult` (path, cost, expanded).
 - `astar.py`: A* from scratch, the same as Dijkstra but ordered by `f = g + h`.
 - `dstar_lite.py` (R7): `DStarLite` incremental search (Koenig & Likhachev 2002). See the D* Lite section below.
+- `multi_stop.py` (R7): `MultiStopPlanner`, one D* Lite per leg for a vehicle with several stops.
+- `sim_replanner.py` (R7): World costs for D* Lite and `reroute()`; the fleet logic is `src/sim/agent_planner.py` (Week 4).
+- `benchmark_replan.py` (R7): D* Lite vs A* replanning benchmark, figure F3.
 - `../world/graph_loader.py`: `load_road_graph(name)` prepares a graph for search.
 - `../viz/plot_route.py`: draws one A* route to `docs/route_example.png`.
 
@@ -77,12 +80,18 @@ route becomes 5x slower; (2) then the vehicle's next road closes.
   run time is about the same. `h(start, u)` is cached until the vehicle moves.
 - Before the predecessor map (PR #5 review) the same trips took 179 ms for the first plan and 46 ms per
   replan: every update scanned all 2,377 nodes to find the roads into a node.
-- Next (Week 3): benchmark against the number of changed edges, and multi-stop routes (one planner per leg).
+- Week 3 benchmark against the number of changed roads: see F3 below.
 
 ### Tests
-`tests/test_dstar_lite.py` checks every D* Lite cost against `astar.py`: hand-checked toy graph, grids,
+`tests/test_multi_stop.py`, `tests/test_sim_replanner.py` (inside R1's sim, vs A*) and
+`tests/test_benchmark_replan.py` cover Week 3. `tests/test_dstar_lite.py` checks every D* Lite cost against `astar.py`: hand-checked toy graph, grids,
 closures and reopening, moving start (km), dead ends, zero-cost roads, 500 random change sequences, 500
 changes in one run (grid and real map, with and without heuristic), and the full-map rounding regression.
+
+### Heuristic debug check
+With a heuristic, `update_edge_cost` warns (`HeuristicWarning`) when a road becomes cheaper than the
+heuristic allows, because routes may then not be optimal. With `make_heuristic(G)` that means below
+free-flow time. R6's multipliers are never below 1 and spikes are 1.2x or more, so it should never fire.
 
 ## Week 2 (R2)
 
@@ -161,3 +170,173 @@ Repeat calls are cache hits (`tm.hits`, `tm.misses`, `tm.expanded`); `clear_cach
 the simulator and metrics only. Planning with it would give agents knowledge of the future and break D10 (all
 conditions see the same information). No predicted-cost factory exists yet; `docs/travel_matrix.md` has a 6-line
 wrapper, checked against WorldTravel.
+## Multi-stop routes (R7, Week 3)
+D* Lite plans to one goal, so `MultiStopPlanner` keeps one D* Lite per leg (vehicle -> stop 1 -> stop 2 ...).
+Road changes go to every remaining leg; when the vehicle reaches a stop, that leg is dropped.
+
+```python
+p = MultiStopPlanner.from_networkx(G, start, [s1, s2, s3], heuristic=make_heuristic(G))
+p.path(); p.path_cost()          # whole route through all stops; [] / inf if a stop is unreachable
+p.close_edge(u, v)               # also update_edge_cost / reopen_edge, sent to every leg
+p.move_start(node)               # vehicle moved; legs advance when a stop is reached
+p.unreachable_stops()            # stops a closure has cut off
+```
+
+## D* Lite in R1's simulator (R7, Week 3)
+`src/search/sim_replanner.py` connects D* Lite to `DeliverySimEnvironment` **without changing R1's code**:
+
+```python
+from src.sim.agent_planner import AgentPlanner        # Week 4 (SimReplanner is the same class)
+planner = AgentPlanner(env, mode="independent", heuristic=make_heuristic(world.graph()))
+planner.register(vehicle, orders)        # sets vehicle.remaining_route
+env.add_vehicle(vehicle, orders)
+env.run()
+planner.finish()                         # logs replan_summary
+```
+- Costs follow decision D10: predicted travel time x live spike multiplier, `inf` while closed.
+- It listens to `env.subscribe`. On every closure or spike, each vehicle's planner is updated and its
+  `remaining_route` replaced. A vehicle on a road cannot turn back, so it replans from the end of that road.
+- Each replan is logged as a new `replan` event: `{"trigger", "edge", "from_node", "route_found",
+  "unreachable_stops", "expanded", "cpu_seconds"}` (CPU time per D9). To add to `docs/log_schema.md` with R1/R8.
+- Closures and spikes have no "ended" event, so roads that had one are re-checked at every later event.
+
+**Suggested change for R1** (replaces the "wait 60 s" `TODO(R7)` in `src/sim/environment.py`, for a
+closure that is already there when the vehicle reaches it):
+
+```python
+from src.search.sim_replanner import reroute, stops_from_route
+...
+if self.world.is_blocked(u, v, self.get_current_time(), key):
+    stops = stops_from_route([v] + vehicle.remaining_route, {o.node for o in pending})
+    new_route = reroute(self.world, vehicle, stops, self.get_current_time())
+    if new_route:                                  # None: no way round now, so wait as before
+        vehicle.remaining_route = new_route
+        continue
+```
+
+## F3: D* Lite vs A* replanning by number of changed roads (R7, Week 3)
+`python -m src.search.benchmark_replan` writes `reports/dstar_benchmark.csv` (one row per trial) and
+`reports/figures/F3_dstar_speedup.png`. 20 trips (seed 7, at least 10 roads), k in {1 ... 500} changed
+roads (D11 mix: 3/7 closures, else spikes x1.2-3), R2's heuristic in both planners, `time.process_time()`.
+Every D* Lite answer is checked against A* during the run.
+
+| Roads changed | Anywhere on the map | On route, near vehicle | On route, near goal |
+| --- | --- | --- | --- |
+| 1 | 58x faster (0.08 vs 4.1 ms) | 5.5x | 1.0x |
+| 10 | 23x | 0.8x | 1.1x |
+| 50 | 3.5x | 0.9x | 1.0x |
+| 100 | 1.4x | 0.8x | 0.9x |
+| 500 | 0.5x (slower) | 0.5x | 0.5x |
+
+Median speed-up = A* CPU / D* Lite CPU. What it shows, honestly:
+- **Changes away from the route are almost free** for D* Lite (most do not touch its search), so a few
+  random disruptions, as in D11, give 20-60x speed-ups.
+- **Changes on the route near the goal give no speed-up.** D* Lite searches backwards from the goal, so a
+  change there invalidates most of its g-values and it redoes about a full search.
+- **Changes on the route near the vehicle** help while few (5x for 1 road) but not beyond about 5 roads,
+  because the new route is far from the old one.
+- **Hundreds of changes at once:** D* Lite is about 2x slower than A*, because repairing costs more per
+  node than searching fresh. Above that a fresh plan (new `DStarLite`) is the better choice.
+- Rough, single-machine figures; rerun with `--trips` and other seeds for the report.
+
+## Agent replanning, independent mode, trigger toggle (R7, Week 4)
+`src/sim/agent_planner.py` (R7 owns it, plan section 4) turns the planners above into agent behaviour inside
+R1's simulator, through `env.subscribe` (R1's code unchanged).
+
+- `ReplanningAgent.on_world_change(changes, t)`: the plan's W4 entry point. `changes` are disruption Events (or
+  payloads, or `(u, v)` roads). The agent finds where the vehicle really is (mid-road: the end of that road, it
+  cannot reverse), updates only those roads with D10 costs (predicted time x live spike, `inf` while closed),
+  repairs D\* Lite and returns a `Route` (nodes, planned ETAs, order ids). `None` = nothing it sees changed;
+  a Route with no nodes = a stop became unreachable (vehicle keeps its old route; W5 decides).
+- `AgentPlanner(env, mode, heuristic, coordination=None, trigger_enabled=None)`: one agent per vehicle.
+  - `mode="independent"`: replan locally, never negotiate (lower-bound baseline). Enabling the trigger raises.
+  - `mode="full"`: after every replan, calls `coordination(vehicle_id, route, routes_by_vehicle, t)`, the hook
+    for R5's trigger + negotiation (W5), only while `trigger_enabled` is on. It returns the messages sent.
+  - `mode="centralized"` raises: that is R4's OR-Tools re-solve.
+  - `set_trigger_enabled(bool)`: runtime toggle, logged as `trigger_toggle`.
+  - `plan(vehicles, orders)` implements the `Planner` interface; `routes()` gives every vehicle's Route.
+  - `finish()` logs `replan_summary`: replans, replan CPU, negotiation calls and messages (0 in independent mode),
+    unreachable stops.
+- Every replan logs a `replan` row with `cpu_seconds` (D9), `expanded`, `mode`, `trigger_enabled`.
+
+**For R1's mode switch (W4)**, in `run_from_config` after the vehicles are built:
+```python
+if config.get("mode", "independent") in ("independent", "full"):
+    planner = AgentPlanner(env, mode=config["mode"], heuristic=make_heuristic(world.graph()),
+                           coordination=None)            # R5's hook in W5
+    for v in vehicles:
+        planner.register(v, assignment[v.id])
+...
+env.run(...)
+planner.finish()
+```
+Tests (`tests/test_agent_planner.py`): closure on the path reroutes; no path handled without crashing; independent
+mode sends zero negotiation messages even with a hook given; every replan logs CPU; full mode calls the hook after
+each replan; the runtime toggle stops it; R1's own disruption generator on the real map with every replan checked
+against A\*.
+
+## Hysteresis, unreachable stops, R5's trigger after every replan (R7, Week 5)
+Code: `src/sim/agent_planner.py` (R7) and `src/sim/coordination_hook.py` (R7's glue to R5's `src/coordination`,
+R5's code unchanged). Tests: `tests/test_agent_planner_w5.py` (23).
+
+**Hysteresis.** After a cost change, D\* Lite's best path is compared with the rest of the old route, both costed
+with what the planner holds now. The vehicle switches only if
+`old_cost - new_cost >= max(min_gain_s, min_gain_frac x old_cost)`; a blocked old route (inf) always switches.
+Defaults `MIN_GAIN_S = 10 s`, `MIN_GAIN_FRAC = 0.05`, to be fixed on pilot seeds and then frozen (D12);
+`min_gain_s=0, min_gain_frac=0` gives the Week 4 behaviour. A kept route still gets new ETAs and logs a
+`replan_kept` row (`gain_s`, `cpu_seconds`). If the best path is unchanged, nothing is logged (Week 4 logged a
+`replan` row then).
+Sanity run, not the experiment (small map, 8 vehicles x 4 stops, R1's generator at 600/h, 1 h, 6 seeds,
+independent mode): route switches 181 without hysteresis vs 142 with the defaults (-22%); 186 vs 188 orders
+delivered; last delivery the same on 4 seeds, +11 s on one, later on the seed that delivered 2 more.
+
+**Unreachable stops** (`AgentPlanner(unreachable="fail")`, default). If a closure cuts a stop off:
+1. a `replan` row with `route_found: false` (as in Week 4);
+2. the vehicle's undelivered orders at the cut-off stops are offered to `reassign(vehicle_id, orders, t)` (R4's
+   hook, when it exists; returns the orders it took); the rest are failed through R1's `_fail` with the new
+   reason `unreachable` and removed from the vehicle's pending list (so they are not failed again at route end);
+3. a `stop_unreachable` row `{"stops", "failed", "reassigned"}`;
+4. a fresh plan through the stops still reachable, logged as a `replan` row with trigger `unreachable`. If dropping
+   a stop leaves the next one cut off too (it was only reachable through it), that one is dropped as well.
+`unreachable="wait"` keeps Week 4: the old route is kept and R1's wait loop waits for the road to reopen.
+Found in testing: R1's closure guard checks each pending stop from where the vehicle is, not from the stop
+before it, so a closure can still cut a stop off in the planned order (seed 1 of the real-map test). A better
+answer than failing would be to visit the stops in another order; that is allocation (R4), so the `reassign`
+hook is the place for it.
+
+**R5's trigger after every local replan** (full mode, no double replans). `AgentPlanner.on_event` now works in
+two passes: (1) every agent replans once for the disruption; (2) the hook runs once per vehicle that switched
+route, so R5 sees everyone's new routes. `TriggerCoordination(trigger)` is that hook:
+```python
+from src.coordination.trigger import ThresholdTrigger
+from src.sim.coordination_hook import TriggerCoordination
+planner = AgentPlanner(env, mode="full", heuristic=make_heuristic(world.graph()),
+                       coordination=TriggerCoordination(ThresholdTrigger(tau=120.0), rate_limit_s=60.0))
+```
+- Routes (nodes + planned ETAs, from where each vehicle is now) become R5's `VehicleRoute`; conflicts come from
+  R5's `prepare_occupancies` + `detect_conflicts`; only conflicts of the vehicle that replanned are looked at.
+- The same conflict (road + vehicles) is not negotiated again within `rate_limit_s`.
+- If `trigger.should_negotiate(...)` fires, R5's Vickrey auction runs. Bid = priority weight (highest priority of the
+  vehicle's undelivered orders) x min(detour extra time, waiting time), where the detour cost comes from the
+  vehicle's own D\* Lite (`ReplanningAgent.detour_extra`, planner left unchanged) and waiting = the overlap.
+- A loser whose detour costs no more than waiting detours: `AgentPlanner.yield_road` keeps it off that road until
+  the overlap ends and replans once (`replan` row, trigger `negotiation_yield`). That replan never calls the hook
+  again. Otherwise the loser should wait; R1's simulator cannot hold a vehicle back yet, so this is only logged.
+- Messages are counted with R5's `MessageCounter` (3 per vehicle per auction, D7) and logged as
+  `negotiation_request` / `negotiation_response` (one each per vehicle, `count: 1`) and one `negotiation_result`
+  (`count` = vehicles, `edge`, `vehicles`, `winner`, `price`, `ttc`, `actions`), the contract in
+  `docs/multipane_viz.md`.
+
+New log rows to add to `docs/log_schema.md` (with R1/R8): `replan_kept`, `stop_unreachable`, the
+`negotiation_*` rows, `order_failed` reason `unreachable`, and in `replan`: `gain_s` and the triggers
+`unreachable` and `negotiation_yield`. `replan_summary` adds `replans_kept`, `yields`, `failed_unreachable`,
+`reassigned`, `min_gain_s`, `min_gain_frac`.
+
+Checked by tests: hysteresis keeps a route for a 5 s gain, switches for 40 s, always leaves a closed road, and
+stops the flip-flop (12 alternating small spikes: 6+ switches without, 0 with); a cut-off order is failed once and
+the other stop delivered; R4's hook takes it instead; cascading drops; the trigger fires, the auction runs, the
+loser detours (or waits when the detour is longer), NeverTrigger and a small tau send nothing, rate limit; on the
+real map with R1's generator at 600/h (3 seeds, 8 vehicles, full mode): the hook runs exactly once per local replan
+and never for a negotiation detour, each vehicle replans at most once per disruption, message counts add up, and
+auctions and detours really happen. Bugs injected by hand (hook called after a detour, hysteresis off, order left
+pending, no cascade, reassign ignored, no rate limit, trigger ignored, loser never detours, flat bids) are caught.

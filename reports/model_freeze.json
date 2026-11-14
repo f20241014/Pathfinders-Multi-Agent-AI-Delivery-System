@@ -1,0 +1,11 @@
+{
+  "model_file": "models/lstm_v1.pt",
+  "model_sha256": "ba74d9d5edc6ba8cb2455a90a0dd7b6b66059ab41e193e89c26aff0ef12a7764",
+  "config_sha256": "2b033f9daebecae58f9817b19dece862041644d4ce8b187868ea226abde83388",
+  "model_bytes": 209285,
+  "parameters": 51395,
+  "edges": 6056,
+  "refresh_seconds_mean": 0.1684,
+  "refresh_seconds_max": 0.2009,
+  "torch_version": "2.14.1"
+}
