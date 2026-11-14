@@ -27,6 +27,7 @@ from __future__ import annotations
 import math
 from typing import Callable, Iterable, Optional
 
+from .csp import EXACT_LIMIT, find_sequence
 from .engine import Activation, Engine, Rule, WorkingMemory
 from .ontology import (
     NARROW_ROAD_CLASSES,
@@ -41,7 +42,6 @@ from .ontology import (
 
 TravelTime = Callable[[int, int, float], float]  # travel_time(u, v, depart_t) -> s (inf = no path)
 HARD = "violation"
-EXACT_LIMIT = 9  # exact stop-order search up to this many stops (worst case grows like n!)
 
 
 def sort_orders_by_priority(orders):
@@ -280,7 +280,7 @@ def _m_exact(wm):
 
 
 def _a_exact(wm, s):
-    seq, expanded = _find_sequence(
+    seq, expanded = find_sequence(
         wm.one("vehicle")["vehicle"], _orders(wm), _ctx(wm)["travel_time"], _ctx(wm)["t"]
     )
     if seq is None:
@@ -288,47 +288,6 @@ def _a_exact(wm, s):
         return f"exact search over {n} stops ({expanded} nodes): no order meets every window"
     _replace_sequence(wm, s, [o.id for o in seq], "exact")
     return f"exact search ({expanded} nodes) found " + " -> ".join(o.id for o in seq)
-
-
-def _serve(o, node, t, tt):
-    arrival = t + tt(node, o.node, t)
-    if math.isinf(arrival):
-        return None
-    tw = tw_of(o)
-    start = max(arrival, tw[0] if tw else -math.inf, o.release_time)
-    if tw and start > tw[1]:
-        return None
-    return start + o.service_time
-
-
-def _find_sequence(vehicle, orders, tt, t_now):
-    """Depth-first over stop orders, earliest deadline first, with dominance pruning.
-
-    Returns (orders in a feasible order, or None; nodes expanded). The Week 3 CSP reuses this idea.
-    """
-    n = len(orders)
-    idx = sorted(range(n), key=lambda i: (_deadline(orders[i]), orders[i].priority))
-    best, expanded = {}, 0
-    end = shift_end_of(vehicle)
-
-    def dfs(left, node, last, t, path):
-        nonlocal expanded
-        if not left:
-            return path if t + tt(node, vehicle.depot_node, t) <= end else None
-        if best.get((left, last), math.inf) <= t:
-            return None
-        best[(left, last)] = t
-        for i in idx:
-            if i in left:
-                depart = _serve(orders[i], node, t, tt)
-                if depart is not None:
-                    expanded += 1
-                    found = dfs(left - {i}, orders[i].node, i, depart, path + [orders[i]])
-                    if found is not None:
-                        return found
-        return None
-
-    return dfs(frozenset(range(n)), position_of(vehicle), None, t_now, []), expanded
 
 
 RULES = [
@@ -405,9 +364,7 @@ def violated_rules(trace: list[str]) -> list[str]:
     """Rule ids that blocked a check, read back from a trace (for rejection reasons)."""
     if not trace or not trace[-1].startswith("INFEASIBLE"):
         return []
-    return sorted(
-        {part.strip().split(" ")[0] for part in trace[-1].split(":", 1)[1].split(";")}
-    )
+    return sorted({part.strip().split(" ")[0] for part in trace[-1].split(":", 1)[1].split(";")})
 
 
 # ---------------------------------------------------------------- road rules for planners

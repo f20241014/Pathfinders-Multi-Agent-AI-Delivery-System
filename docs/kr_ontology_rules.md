@@ -16,10 +16,7 @@ are not team-wide until R1 records them there.
 | `demand`, `capacity`, `load` | abstract capacity units, same unit for all three (D2); 1 unit = median Amazon package volume |
 | `tw_start`, `tw_end`, `release_time`, `shift_end` | seconds since midnight, inside 06:00-10:00 (21600-36000 s, D4) |
 | `service_time` | seconds (a duration) |
-| no time window | `tw_start = tw_end = None` everywhere (never -1.0, never a full-day window) |
-
-TODO(R1): accept `None` in `Order` and in the environment's window checks (today `Order` defaults
-to 0.0/86400.0).
+| no time window | `tw_start = 0.0`, `tw_end = 86400.0` (R1's `Order` defaults, never `None`); `ontology.tw_of()` reads exactly that pair as "no window" |
 
 The 20/50/30 express/standard/economy split and the 30% share of dynamic orders are our
 assumptions (the Amazon data has no priorities): `PRIORITY_SPLIT`, `DYNAMIC_SHARE` in
@@ -54,10 +51,10 @@ assumptions (the Amazon data has no priorities): `PRIORITY_SPLIT`, `DYNAMIC_SHAR
 |---|---|---|---|
 | KR-1 | A vehicle's total demand (load already on board + new orders) may not exceed its capacity. | H | `rules.py` |
 | KR-2 | A vehicle with zero remaining capacity does not bid on new orders. | H | follows from KR-1; bidding is TODO(R4) |
-| KR-3 | A vehicle may only use roads whose class is in its allowed road classes (large vehicles avoid `residential`, `living_street`, `service`, `unclassified`). | H | `road_allowed` |
-| KR-4 | No vehicle may enter an edge while it is closed. | H | `road_allowed` |
+| KR-3 | A vehicle may only use roads whose class is in its allowed road classes (large vehicles avoid `residential`, `living_street`, `service`, `unclassified`). | H | `road_allowed`; in planners via `planner_rules.RoadRules` |
+| KR-4 | No vehicle may enter an edge while it is closed. | H | `road_allowed`; planners via `RoadRules` / R1's world |
 | KR-5 | A vehicle may not traverse a one-way edge against its direction. | H | the graph is directed (R2) |
-| KR-6 | Large vehicles may not enter a restricted zone during its restricted hours. | H | `road_allowed`; zones TODO(R2) |
+| KR-6 | Large vehicles may not enter a restricted zone during its restricted hours. | H | `road_allowed`, `RoadRules`; zones TODO(R2) |
 | KR-7 | If a vehicle arrives before tw_start (or release_time), it waits. | H | `rules.py` (ETA) |
 | KR-8 | Service must start no later than tw_end. | H | `rules.py`, needs travel times |
 | KR-9 | Departure from a stop = service start + service_time. | H | `rules.py` (ETA) |
@@ -65,9 +62,9 @@ assumptions (the Amazon data has no priorities): `PRIORITY_SPLIT`, `DYNAMIC_SHAR
 | KR-10a | Shift duration: even with zero travel, all service must end before shift_end. | H | `rules.py` (no travel times needed) |
 | KR-11 | An order cannot be assigned or served before its release_time. | H | `rules.py` |
 | KR-12 | Each order is served exactly once, by exactly one vehicle. | H | allocation audit, TODO(R4/R5) |
-| KR-13 | Express (priority 1) stops come before priority 2 and 3, unless that breaks a hard time rule. | S | `rules.py` |
+| KR-13 | Express (priority 1) stops come before priority 2 and 3, unless that breaks a hard time rule. | S | `rules.py`; planners via `planner_rules.priority_stops` |
 | KR-13x | If the priority order breaks KR-8/KR-10, retry earliest deadline first. | override | `rules.py` |
-| KR-13y | If that fails too, search every stop order (up to 9 stops). | override | `rules.py` |
+| KR-13y | If that fails too, search every stop order (up to 9 stops). | override | `rules.py` -> `csp.find_sequence` |
 | KR-14 | An express order must be assigned within X minutes of release, otherwise it is re-auctioned. | S | TODO(R4) |
 | KR-15 | If no vehicle can serve an order, mark it `rejected` with the rule(s) that blocked every vehicle. | H | `violated_rules()` gives the reasons; marking TODO(R4) |
 | KR-16 | When a new closure invalidates a planned route, the vehicle must replan before continuing. | H | TODO(R7) |
@@ -100,7 +97,7 @@ FEASIBLE: S -> E
 ```
 
 ## 5. Open questions
-- R1 to record the units above in DECISIONS.md and accept `None` as "no time window".
+- R1 to record the units above in DECISIONS.md.
 - Two vehicle classes, or a homogeneous fleet first (D2 says homogeneous first, so KR-3/KR-6 only matter once large vehicles exist)?
 - Value of X in KR-14 (suggest 10 sim-minutes). TODO(R4)
 - Which Secunderabad areas are KR-6 zones. TODO(R2)

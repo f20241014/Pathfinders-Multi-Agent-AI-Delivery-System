@@ -88,7 +88,15 @@ def shift_end_of(vehicle) -> float:
 
 
 def class_of(vehicle) -> str:
-    return getattr(vehicle, "vehicle_class", None) or "small"
+    """ "small" or "large". R1's Vehicle has no vehicle_class, so a vehicle whose
+    allowed_road_classes excludes every narrow road class counts as large (KR-3, KR-6)."""
+    explicit = getattr(vehicle, "vehicle_class", None)
+    if explicit:
+        return explicit
+    allowed = getattr(vehicle, "allowed_road_classes", None)
+    if allowed is not None and not (set(allowed) & NARROW_ROAD_CLASSES):
+        return "large"
+    return "small"
 
 
 def allowed_classes_of(vehicle):
