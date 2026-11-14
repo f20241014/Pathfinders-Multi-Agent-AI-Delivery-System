@@ -61,3 +61,37 @@ def test_every_order_servable_alone(graph):
     G, nodes = graph
     cfg = build_config(PlaceholderProfile(), G, nodes, "small", "uniform", 0, "t", "x")
     assert check_servable(G, cfg) == []
+
+
+def test_mixed_fleet_marks_large_vehicles_and_puts_depots_on_their_roads(graph):
+    from src.data.make_scenarios import large_network
+    from src.kr.ontology import class_of
+    from src.kr.planner_rules import LARGE_VEHICLE_CLASSES
+
+    G, nodes = graph
+    net = large_network(G)
+    cfg = build_config(
+        PlaceholderProfile(),
+        G,
+        nodes,
+        "small",
+        "uniform",
+        0,
+        "t",
+        "x",
+        large_share=0.3,
+        large_nodes=net,
+    )
+    vehicles = [build_vehicle(v) for v in cfg["vehicles"]]
+    big = [v for v in vehicles if class_of(v) == "large"]
+    assert len(big) == 3 and cfg["scenario_meta"]["large_vehicles"] == 3
+    assert all(v.allowed_road_classes == LARGE_VEHICLE_CLASSES for v in big)
+    assert set(cfg["scenario_meta"]["depots"]) <= net
+    assert check_servable(G, cfg) == []
+
+
+def test_default_fleet_has_no_large_vehicles(graph):
+    G, nodes = graph
+    cfg = build_config(PlaceholderProfile(), G, nodes, "small", "uniform", 0, "t", "x")
+    assert cfg["scenario_meta"]["large_vehicles"] == 0
+    assert all("allowed_road_classes" not in v for v in cfg["vehicles"])

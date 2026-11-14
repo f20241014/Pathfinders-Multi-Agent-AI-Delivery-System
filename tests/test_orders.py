@@ -101,3 +101,4 @@ def test_tw_of_reads_r1_defaults_as_no_window():
     assert tw_of(SimOrder("c", 1, 1, tw_start=21600.0, tw_end=86400.0)) == (21600.0, 86400.0)
     assert tw_of(SimOrder("d", 1, 1, tw_start=0.0, tw_end=30000.0)) == (0.0, 30000.0)
     assert tw_of(SimOrder("e", 1, 1, tw_start=None, tw_end=None)) is None  # older objects
+

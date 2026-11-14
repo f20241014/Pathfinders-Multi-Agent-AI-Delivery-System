@@ -15,8 +15,14 @@ directly with:  python -m src.sim.run --config configs/scenarios/medium_clustere
 Orders come straight from src/data/orders_from_amazon.py in R1's units: seconds since midnight
 inside 06:00-10:00 (D4), and R1's defaults tw_start 0.0 / tw_end 86400.0 for "no time window".
 
-Assumptions to state in the report: homogeneous fleet; capacity set so total demand is
-LOAD_FACTOR of total fleet capacity; depots = graph nodes nearest to k-means centres of the map.
+Assumptions to state in the report: homogeneous fleet by default (D2); capacity set so total
+demand is LOAD_FACTOR of total fleet capacity; depots = graph nodes nearest to k-means centres.
+
+Week 4 (final configs): --large-share 0.3 makes 30% of each fleet large vehicles (KR-3: no
+residential / living_street / service / unclassified roads, written as R1's allowed_road_classes).
+On the Secunderabad map a large vehicle can reach only about 28% of the nodes, so with large
+vehicles the depots move onto the large-vehicle road network, and the "servable" check applies
+the road rules (an order only large vehicles could reach would be flagged).
 """
 
 from __future__ import annotations
@@ -68,7 +74,23 @@ def load_nodes(graph_name: str):
     return G, nodes
 
 
-def pick_depots(nodes: pd.DataFrame, k: int, seed: int) -> list[int]:
+def large_network(G) -> set:
+    """Nodes in the largest strongly connected part of the map a large vehicle may drive (KR-3)."""
+    import networkx as nx
+
+    from src.kr.planner_rules import LARGE_VEHICLE_CLASSES, RoadRules
+    from src.sim.models import Vehicle
+
+    probe = Vehicle("probe", 0, 1.0, 0, allowed_road_classes=LARGE_VEHICLE_CLASSES)
+    bad = RoadRules(G).class_blocked(probe)
+    H = nx.DiGraph([(u, v) for u, v in set(G.edges()) if (u, v) not in bad])
+    return max(nx.strongly_connected_components(H), key=len) if H.number_of_nodes() else set()
+
+
+def pick_depots(nodes: pd.DataFrame, k: int, seed: int, allowed=None) -> list[int]:
+    """Node nearest each k-means centre; with allowed, only nodes in that set can be depots."""
+    if allowed is not None:
+        nodes = nodes[nodes["node"].isin(allowed)].reset_index(drop=True)
     X = nodes[["x", "y"]].to_numpy(float)
     lab = kmeans(X, k, seed)
     depots = []
@@ -82,10 +104,24 @@ def pick_depots(nodes: pd.DataFrame, k: int, seed: int) -> list[int]:
 
 
 def build_config(
-    emp, G, nodes, size: str, layout: str, seed: int, source: str, map_path: str
+    emp,
+    G,
+    nodes,
+    size: str,
+    layout: str,
+    seed: int,
+    source: str,
+    map_path: str,
+    large_share: float = 0.0,
+    large_nodes=None,
 ) -> dict:
+    from src.kr.planner_rules import LARGE_VEHICLE_CLASSES
+
     n_veh, n_dep, n_ord = SIZES[size]
-    depots = pick_depots(nodes, n_dep, 10_000 + seed)
+    n_large = int(round(large_share * n_veh))
+    if n_large and large_nodes is None:
+        large_nodes = large_network(G)
+    depots = pick_depots(nodes, n_dep, 10_000 + seed, large_nodes if n_large else None)
     orders = generate(emp, nodes, n_ord, seed, layout, depot_nodes=tuple(depots))
     total = sum(o.demand for o in orders)
     capacity = float(math.ceil(total / (n_veh * LOAD_FACTOR)))
@@ -101,6 +137,9 @@ def build_config(
         )
         for i in range(n_veh)
     ]
+    first_large = n_veh - n_large  # the last n_large vehicles are large (KR-3)
+    for v in vehicles[first_large:]:
+        v["allowed_road_classes"] = list(LARGE_VEHICLE_CLASSES)
     name = f"{size}_{layout}"
     return {
         "run_id": f"{name}_s{seed}",
@@ -121,6 +160,7 @@ def build_config(
             "depots": depots,
             "unit_cm3": round(float(emp.unit_cm3), 1),
             "load_factor": LOAD_FACTOR,
+            "large_vehicles": n_large,
             "dynamic_orders": int(sum(o.release_time > START_S for o in orders)),
             "orders_with_tw_from_data": int(sum(tw_of(o) is not None for o in orders)),
             "priority_counts": {p: int(sum(o.priority == p for o in orders)) for p in (1, 2, 3)},
@@ -129,22 +169,34 @@ def build_config(
 
 
 def check_servable(G, cfg) -> list[str]:
-    """Orders that no vehicle could serve even alone (free-flow times from R2's matrix)."""
+    """Orders that no vehicle could serve even alone, at free-flow speed, under the road rules.
+
+    Vehicles with the same allowed road classes share one rule-aware travel-time matrix (R2's).
+    """
     from src.kr.adapters import travel_time_from_matrix
     from src.kr.csp import eligible_vehicles
-    from src.search.dijkstra import free_flow_cost
+    from src.kr.planner_rules import RoadRules
     from src.search.travel_matrix import TravelTimeMatrix
     from src.sim.run import build_order, build_vehicle
 
     vehicles = [build_vehicle(v) for v in cfg["vehicles"]]
     orders = [build_order(o) for o in cfg["orders"]]
     nodes = {o.node for o in orders} | {v.depot_node for v in vehicles}
-    tt = travel_time_from_matrix(TravelTimeMatrix(G, lambda t: free_flow_cost), nodes, bucket_s=1e9)
-    return [
-        o.id
-        for o in orders
-        if not eligible_vehicles(o, vehicles, tt, t_now=o.release_time, check_release=False)[0]
-    ]
+    rules = RoadRules(G)
+    groups: dict = {}
+    for v in vehicles:
+        groups.setdefault(tuple(sorted(v.allowed_road_classes or [])), []).append(v)
+    servable = set()
+    for group in groups.values():
+        ttm = TravelTimeMatrix(G, rules.cost_fn_factory(group[0]))
+        tt = travel_time_from_matrix(ttm, nodes, bucket_s=1e9)
+        for o in orders:
+            if (
+                o.id not in servable
+                and eligible_vehicles(o, group, tt, t_now=o.release_time, check_release=False)[0]
+            ):
+                servable.add(o.id)
+    return [o.id for o in orders if o.id not in servable]
 
 
 def main():
@@ -160,6 +212,12 @@ def main():
     ap.add_argument("--sizes", nargs="+", default=list(SIZES))
     ap.add_argument("--out-dir", default="configs/scenarios")
     ap.add_argument("--skip-check", action="store_true")
+    ap.add_argument(
+        "--large-share",
+        type=float,
+        default=0.0,
+        help="share of each fleet that are large vehicles (KR-3); default 0 (D2)",
+    )
     a = ap.parse_args()
 
     if a.placeholder_profile:
@@ -178,16 +236,27 @@ def main():
     G, nodes = load_nodes(a.graph)
     out = Path(a.out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    large_nodes = large_network(G) if a.large_share > 0 else None
     for seed in a.seeds:
         for size in a.sizes:
             for layout in LAYOUTS:
                 cfg = build_config(
-                    emp, G, nodes, size, layout, seed, source, f"data/processed/{a.graph}.graphml"
+                    emp,
+                    G,
+                    nodes,
+                    size,
+                    layout,
+                    seed,
+                    source,
+                    f"data/processed/{a.graph}.graphml",
+                    a.large_share,
+                    large_nodes,
                 )
                 if not a.skip_check:
                     bad = check_servable(G, cfg)
                     cfg["scenario_meta"]["orders_unservable_alone"] = bad
-                path = out / f"{size}_{layout}_s{seed}.yaml"
+                suffix = f"_large{int(round(a.large_share * 100))}" if a.large_share > 0 else ""
+                path = out / f"{size}_{layout}{suffix}_s{seed}.yaml"
                 with open(path, "w") as f:
                     yaml.safe_dump(cfg, f, sort_keys=False)
                 m = cfg["scenario_meta"]
