@@ -5,13 +5,15 @@ Pieces:
   WorkingMemory  facts = dicts with a "type" key; each fact gets an integer id
   Rule           name, salience, match(wm) -> activations, act(wm, binding)
   Agenda         all (rule, binding) pairs whose conditions hold now
-  Cycle          match -> pick highest-salience activation -> fire -> repeat until nothing new (quiescence)
+  Cycle          match -> pick highest-salience activation -> fire -> repeat
+                 until nothing new can fire (quiescence)
 
 Conflict resolution: higher salience first; ties broken by rule order, then by recency of the facts
 (newer first). Refraction: an activation (rule, key) fires at most once, so the loop always ends.
 
 Every firing is written to the explanation trace, which is what feasible() returns.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -45,18 +47,18 @@ class WorkingMemory:
 
 @dataclass
 class Activation:
-    key: tuple          # identifies the binding (used for refraction)
-    binding: Any        # passed to the action
-    recency: int = 0    # max fact id involved; larger = newer
+    key: tuple  # identifies the binding (used for refraction)
+    binding: Any  # passed to the action
+    recency: int = 0  # max fact id involved; larger = newer
 
 
 @dataclass
 class Rule:
-    name: str           # e.g. "R01"
+    name: str  # e.g. "R01"
     description: str
     salience: int
     match: Callable[[WorkingMemory], Iterable[Activation]]
-    act: Callable[[WorkingMemory, Any], str]   # returns a one-line message for the trace
+    act: Callable[[WorkingMemory, Any], str]  # returns a one-line message for the trace
 
 
 class Engine:
@@ -70,16 +72,17 @@ class Engine:
         trace: list[str] = []
         for _ in range(self.max_cycles):
             agenda = [
-                (r, a)
-                for r in self.rules
-                for a in r.match(wm)
-                if (r.name, a.key) not in fired
+                (r, a) for r in self.rules for a in r.match(wm) if (r.name, a.key) not in fired
             ]
             if not agenda:
                 return trace
-            rule, act = max(agenda, key=lambda ra: (ra[0].salience, -self.order[ra[0].name], ra[1].recency))
+            rule, act = max(
+                agenda, key=lambda ra: (ra[0].salience, -self.order[ra[0].name], ra[1].recency)
+            )
             fired.add((rule.name, act.key))
             msg = rule.act(wm, act.binding)
             if msg:
                 trace.append(f"{rule.name}: {msg}")
-        raise RuntimeError("rule engine did not reach quiescence (check for rules that keep asserting new facts)")
+        raise RuntimeError(
+            "rule engine did not reach quiescence (check for rules that keep asserting new facts)"
+        )

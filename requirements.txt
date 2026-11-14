@@ -10,3 +10,4 @@ simpy==4.1.2
 pyyaml==6.0.1
 ortools==9.15.6755
 scipy>=1.13
+python-constraint2>=2.0
